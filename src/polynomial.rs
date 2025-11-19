@@ -1,4 +1,7 @@
-use std::{marker::PhantomData, ops::{Add, Sub}};
+use std::{
+    marker::PhantomData,
+    ops::{Add, Mul, Sub},
+};
 
 pub fn mod_q(x: i64, q: i64) -> i64 {
     ((x % q) + q) % q
@@ -47,11 +50,11 @@ impl<P: PolyParams> From<Vec<i64>> for Polynomial<P> {
 
 impl<P: PolyParams> Add for &Polynomial<P> {
     type Output = Polynomial<P>;
-    fn add(self, other: Self) -> Polynomial<P> {
+    fn add(self, rhs: Self) -> Polynomial<P> {
         let new_coeffs = self
             .coeffs
             .iter()
-            .zip(other.coeffs.iter())
+            .zip(rhs.coeffs.iter())
             .map(|(a, b)| mod_q(a + b, P::Q))
             .collect();
         Polynomial::<P> {
@@ -63,11 +66,11 @@ impl<P: PolyParams> Add for &Polynomial<P> {
 
 impl<P: PolyParams> Sub for &Polynomial<P> {
     type Output = Polynomial<P>;
-    fn sub(self, other: Self) -> Polynomial<P> {
+    fn sub(self, rhs: Self) -> Polynomial<P> {
         let new_coeffs = self
             .coeffs
             .iter()
-            .zip(other.coeffs.iter())
+            .zip(rhs.coeffs.iter())
             .map(|(a, b)| mod_q(a - b, P::Q))
             .collect();
         Polynomial::<P> {
@@ -77,3 +80,27 @@ impl<P: PolyParams> Sub for &Polynomial<P> {
     }
 }
 
+impl<P: PolyParams> Mul for &Polynomial<P> {
+    type Output = Polynomial<P>;
+    fn mul(self, rhs: Self) -> Self::Output {
+        let mut new_coeffs = vec![0i64; P::N];
+
+        for i in 0..P::N {
+            for j in 0..P::N {
+                let pdt = self.coeffs[i] * rhs.coeffs[j];
+
+                let k = i + j;
+                if k < P::N {
+                    new_coeffs[k] = mod_q(new_coeffs[k] + pdt, P::Q);
+                } else {
+                    let k_prime = k - P::N;
+                    new_coeffs[k_prime] = mod_q(new_coeffs[k_prime] + pdt, P::Q);
+                }
+            }
+        }
+        Polynomial::<P> {
+            coeffs: new_coeffs,
+            _marker: PhantomData::<P>,
+        }
+    }
+}
