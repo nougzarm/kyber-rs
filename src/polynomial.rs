@@ -128,16 +128,20 @@ impl<P: PolyParams> fmt::Display for Polynomial<P> {
         let mut terms = Vec::new();
         for i in (0..P::N).rev() {
             let c = self.coeffs[i];
-            if c == 0 { continue; }
+            if c == 0 {
+                continue;
+            }
 
             let mut term_str = String::new();
-            
+
             if c != 1 || i == 0 {
                 term_str.push_str(&c.to_string());
             }
 
             if i > 0 {
-                if c != 1 { term_str.push('*'); }
+                if c != 1 {
+                    term_str.push('*');
+                }
                 term_str.push('X');
                 if i > 1 {
                     term_str.push_str(&format!("^{}", i));
