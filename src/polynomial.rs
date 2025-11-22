@@ -1,4 +1,5 @@
 use core::fmt;
+use sha3::{Shake128, digest::{ExtendableOutput, Update, XofReader}};
 use std::{
     marker::PhantomData,
     ops::{Add, Index, IndexMut, Mul, Sub},
@@ -12,7 +13,7 @@ pub fn mod_q(x: i64, q: i64) -> i64 {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Polynomial<P: PolyParams> {
-    coeffs: Vec<i64>,
+    pub coeffs: Vec<i64>,
     _marker: std::marker::PhantomData<P>,
 }
 
@@ -149,7 +150,7 @@ impl<P: PolyParams> IndexMut<usize> for Polynomial<P> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PolynomialNTT<P: PolyParams> {
-    coeffs: Vec<i64>,
+    pub coeffs: Vec<i64>,
     _marker: std::marker::PhantomData<P>,
 }
 
@@ -163,9 +164,26 @@ impl<P: PolyParams> From<Vec<i64>> for PolynomialNTT<P> {
 }
 
 impl<P: PolyParams> PolynomialNTT<P> {
-    pub fn SampleNTT(&[u8, 34]) -> Self {
+    pub fn SampleNTT(bytes: &[u8; 34]) -> Self {
         let mut a = vec![0i64; P::N];
-
+        let mut hasher = Shake128::default();
+        hasher.update(bytes);
+        let mut reader = hasher.finalize_xof();
+        let mut j = 0;
+        while j < P::N {
+            let mut C = [0u8; 3];
+            reader.read(&mut C);
+            let d1 = (C[0] as i64) + (P::N as i64) *(C[1] as i64 % 16);
+            let d2 = (C[1] as i64 / 16) + 16 * (C[2] as i64);
+            if d1 < P::Q {
+                a[j] = d1;
+                j += 1;
+            }
+            if (d2 < P::Q) && (j < P::N) {
+                a[j] = d2;
+                j += 1;
+            }
+        }
         PolynomialNTT::<P>::from(a)
     }
 }
@@ -183,5 +201,8 @@ mod tests {
         (g[19], g[3]) = (43i64, 92i64);
         println!("Polynomial f + g: {}", &f + &g);
         println!("Polynomial f * g: {}", &f * &g);
+
+        let F = PolynomialNTT::<KyberParams>::SampleNTT(b"Salut de la part de moi meme le ka");
+        println!("Voici : {:?}", F.coeffs);
     }
 }

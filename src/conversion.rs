@@ -26,7 +26,7 @@ pub fn BytesToBits(bytes: Vec<u8>) -> BitVec<u8, Lsb0> {
 /// Input : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
 /// Output : B in B^(32*d)
 pub fn ByteEncode<const N: usize>(F: Vec<i64>, d: usize) -> Vec<u8> {
-    let mut bits = BitVec::<u8, Lsb0>::with_capacity(N * d as usize);
+    let mut bits = bitvec![u8, Lsb0; 0; N * d];
     for i in 0..N {
         let mut a = F[i];
         for j in 0..d {
@@ -62,6 +62,8 @@ pub fn ByteDecode<const N: usize, const Q: i64>(bytes: Vec<u8>, d: usize) -> Vec
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::polynomial::PolynomialNTT;
+    use crate::constants::KyberParams;
 
     #[test]
     fn basics() {
@@ -82,5 +84,8 @@ mod tests {
             1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0
         ];
         assert_eq!(BytesToBits(BitsToBytes(b.clone())), b);
+
+        let F = PolynomialNTT::<KyberParams>::SampleNTT(b"Salut de la part de moi meme le ka").coeffs;
+        let F_rev = ByteDecode::<256, 3329>(ByteEncode::<256>(F, 12), 12);
     }
 }
