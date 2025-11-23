@@ -69,21 +69,21 @@ mod tests {
         let prf_result = prf(2, seed_s, nonce_b);
         assert_eq!(prf_result, hex::decode("eedb2631fdc3c6748dc567534e90eb016d087e6c088f3de6f815e854e6a78daf4181a01d80f26c1f9d2816f95e2427b8e261cc45dc2a98f96a81db2235b0f4d02c4a6b2ad94e3444dc921fc0ed378bca86a9eec7179c45be3f6b9809a4770012e7cd143872e45b7bf8f34e6819102d5a55f32a1f9d105a8b3dfe25af75d76f93").unwrap());
 
-        let h_result = h(b"qjdhfyritoprlkdjfkrjfbdnzyhdjrtr");
+        let h_result = h(seed_s);
         assert_eq!(
             h_result.to_vec(),
             hex::decode("af791f788a6048e5f16b9ee9ef12add7a3fcdf2d615f79960c588bdc9824178f")
                 .unwrap()
         );
 
-        let j_result = j(b"qjdhfyritoprlkdjfkrjfbdnzyhdjrtr");
+        let j_result = j(seed_s);
         assert_eq!(
             j_result.to_vec(),
             hex::decode("1ffbe9a12ca007f5e869838bd0ba33284554800575b87b1023bbfe41a7332b7a")
                 .unwrap()
         );
 
-        let (g_a, g_b) = g(b"qjdhfyritoprlkdjfkrjfbdnzyhdjrtr");
+        let (g_a, g_b) = g(seed_s);
         assert_eq!(
             (g_a.to_vec(), g_b.to_vec()),
             (
