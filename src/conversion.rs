@@ -83,7 +83,7 @@ mod tests {
         assert_eq!(BytesToBits(&BitsToBytes(b.clone())), b);
 
         let f =
-            PolynomialNTT::<KyberParams>::SampleNTT(b"Salut de la part de moi meme le ka").coeffs;
+            PolynomialNTT::<KyberParams>::sample_ntt(b"Salut de la part de moi meme le ka").coeffs;
         let f_rev = ByteDecode::<256, 3329>(&ByteEncode::<256>(&f, 12), 12);
         assert_eq!(&f, &f_rev);
     }

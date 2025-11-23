@@ -5,7 +5,7 @@ use sha3::{
 };
 use std::{
     marker::PhantomData,
-    ops::{Add, Index, IndexMut, Mul, RemAssign, Sub},
+    ops::{Add, Index, IndexMut, Mul, Sub},
 };
 
 use crate::constants::PolyParams;
@@ -95,7 +95,7 @@ impl<P: PolyParams> Polynomial<P> {
         }
 
         for i in 0..(P::N) {
-            coeffs[i] = (coeffs[i] * P::N_inv).rem_euclid(P::Q);
+            coeffs[i] = (coeffs[i] * P::N_INV).rem_euclid(P::Q);
         }
 
         Polynomial {
@@ -226,17 +226,21 @@ impl<P: PolyParams> From<Vec<i64>> for PolynomialNTT<P> {
 }
 
 impl<P: PolyParams> PolynomialNTT<P> {
-    pub fn SampleNTT(bytes: &[u8; 34]) -> Self {
+    /// Algorithm 7 : SampleNTT(B)
+    ///
+    /// Input : B in B^34
+    /// Output : a in PolynomialNTT
+    pub fn sample_ntt(bytes: &[u8; 34]) -> Self {
         let mut a = vec![0i64; P::N];
         let mut hasher = Shake128::default();
         hasher.update(bytes);
         let mut reader = hasher.finalize_xof();
         let mut j = 0;
         while j < P::N {
-            let mut C = [0u8; 3];
-            reader.read(&mut C);
-            let d1 = (C[0] as i64) + (P::N as i64) * (C[1] as i64 % 16);
-            let d2 = (C[1] as i64 / 16) + 16 * (C[2] as i64);
+            let mut c = [0u8; 3];
+            reader.read(&mut c);
+            let d1 = (c[0] as i64) + (P::N as i64) * (c[1] as i64 % 16);
+            let d2 = (c[1] as i64 / 16) + 16 * (c[2] as i64);
             if d1 < P::Q {
                 a[j] = d1;
                 j += 1;
