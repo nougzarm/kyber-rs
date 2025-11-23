@@ -299,7 +299,7 @@ mod tests {
         println!("Polynomial f * g: {}", &f * &g);
 
         let mut a_coeffs: Vec<i64> = vec![1, 0, 2, 3];
-        a_coeffs.extend_from_slice(&[0i64; KyberParams::N]);
+        a_coeffs.extend_from_slice(&[0i64; KyberParams::N - 4]);
         let a = Polynomial::<KyberParams>::from(a_coeffs);
         assert_eq!(
             Polynomial::<KyberParams>::from_ntt(&a.to_ntt()).coeffs,
