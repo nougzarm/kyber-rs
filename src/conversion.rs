@@ -14,8 +14,8 @@ pub fn BitsToBytes(bits: BitVec<u8, Lsb0>) -> Vec<u8> {
 ///
 /// Input : B in B^r
 /// Output : b in {0, 1}^(8*r)
-pub fn BytesToBits(bytes: Vec<u8>) -> BitVec<u8, Lsb0> {
-    BitVec::<u8, Lsb0>::from_vec(bytes)
+pub fn BytesToBits(bytes: &[u8]) -> BitVec<u8, Lsb0> {
+    BitVec::<u8, Lsb0>::from_vec(bytes.to_vec())
 }
 
 /// Algorithm 5 : ByteEncode_d(F)
@@ -23,7 +23,7 @@ pub fn BytesToBits(bytes: Vec<u8>) -> BitVec<u8, Lsb0> {
 ///
 /// Input : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
 /// Output : B in B^(32*d)
-pub fn ByteEncode<const N: usize>(F: Vec<i64>, d: usize) -> Vec<u8> {
+pub fn ByteEncode<const N: usize>(F: &[i64], d: usize) -> Vec<u8> {
     let mut bits = bitvec![u8, Lsb0; 0; N * d];
     for i in 0..N {
         let a = F[i];
@@ -40,7 +40,7 @@ pub fn ByteEncode<const N: usize>(F: Vec<i64>, d: usize) -> Vec<u8> {
 ///
 /// Input : B in B^(32*d)
 /// Output : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
-pub fn ByteDecode<const N: usize, const Q: i64>(bytes: Vec<u8>, d: usize) -> Vec<i64> {
+pub fn ByteDecode<const N: usize, const Q: i64>(bytes: &[u8], d: usize) -> Vec<i64> {
     let m = match d {
         12 => Q,
         _ => 1i64 << d,
@@ -64,8 +64,8 @@ mod tests {
 
     #[test]
     fn basics() {
-        let bytes = b"salut tous le monde. Comment allez vous".to_vec();
-        assert_eq!(BitsToBytes(BytesToBits(bytes.clone())), bytes);
+        let bytes = b"salut tous le monde. Comment allez vous";
+        assert_eq!(BitsToBytes(BytesToBits(bytes)), bytes);
 
         let b = bitvec![u8, Lsb0;
             1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1,
@@ -80,10 +80,11 @@ mod tests {
             1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1,
             1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0
         ];
-        assert_eq!(BytesToBits(BitsToBytes(b.clone())), b);
+        assert_eq!(BytesToBits(&BitsToBytes(b.clone())), b);
 
         let f =
             PolynomialNTT::<KyberParams>::SampleNTT(b"Salut de la part de moi meme le ka").coeffs;
-        let f_rev = ByteDecode::<256, 3329>(ByteEncode::<256>(f, 12), 12);
+        let f_rev = ByteDecode::<256, 3329>(&ByteEncode::<256>(&f, 12), 12);
+        assert_eq!(&f, &f_rev);
     }
 }
