@@ -61,8 +61,8 @@ pub fn ByteDecode<const N: usize, const Q: i64>(bytes: Vec<u8>, d: usize) -> Vec
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::polynomial::PolynomialNTT;
     use crate::constants::KyberParams;
+    use crate::polynomial::PolynomialNTT;
 
     #[test]
     fn basics() {
@@ -84,7 +84,8 @@ mod tests {
         ];
         assert_eq!(BytesToBits(BitsToBytes(b.clone())), b);
 
-        let f = PolynomialNTT::<KyberParams>::SampleNTT(b"Salut de la part de moi meme le ka").coeffs;
+        let f =
+            PolynomialNTT::<KyberParams>::SampleNTT(b"Salut de la part de moi meme le ka").coeffs;
         let f_rev = ByteDecode::<256, 3329>(ByteEncode::<256>(f, 12), 12);
     }
 }

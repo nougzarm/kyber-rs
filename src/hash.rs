@@ -1,30 +1,72 @@
-use sha3::{Shake128, digest::{ExtendableOutput, Update, XofReader}};
+use hex::FromHex;
+use sha3::digest::{ExtendableOutput, Update, XofReader};
+use sha3::{Digest, Sha3_256, Sha3_512, Shake256};
 
-pub trait XOF {
-    fn new() -> Self;
-
-    fn absorb(&mut self, bytes: Vec<u8>);
-
-    fn squeeze(&mut self, length: usize) -> Vec<u8>;
-}
-
-pub enum SHAKE128 {
-    Absorbing(Shake128),
-    Squeezing(Box<dyn XofReader>),
-}
-
-impl XOF for SHAKE128 {
-    fn new() -> Self {
-        SHAKE128::Absorbing(Shake128::default())
+/// Matches the definition in (4.2) and in (4.3)
+/// PRF : {2, 3} x B^32 x B -> B^(64*eta)
+pub fn prf(eta: usize, s: &[u8], b: &[u8]) -> Vec<u8> {
+    if eta != 2 && eta != 3 {
+        panic!("Unauthorized value for eta: {}", eta);
     }
 
-    fn absorb(&mut self, bytes: Vec<u8>) {
-        self.0.update(&bytes);
-    }
+    let mut hasher = Shake256::default();
+    hasher.update(s);
+    hasher.update(b);
 
-    fn squeeze(&mut self, length: usize) -> Vec<u8> {
-        let mut output = vec![0u8; length];
-        self.0.finalize_xof(&mut output);
-        output
+    let mut reader = hasher.finalize_xof();
+    let mut output = vec![0u8; 64 * eta];
+    reader.read(&mut output);
+
+    output
+}
+
+/// Matches the definition in (4.4)
+/// H : B* -> B^32
+pub fn h(s: &[u8]) -> [u8; 32] {
+    let mut hasher = Sha3_256::new();
+    Update::update(&mut hasher, s);
+
+    hasher.finalize().into()
+}
+
+/// Matches the definition in (4.4)
+/// J : B* -> B^32
+pub fn j(s: &[u8]) -> [u8; 32] {
+    let mut hasher = Shake256::default();
+    hasher.update(s);
+
+    let mut reader = hasher.finalize_xof();
+    let mut output = [0u8; 32];
+    reader.read(&mut output);
+
+    output
+}
+
+/// Matches the definition in (4.5)
+/// G : B* -> B^32 x B^32
+pub fn g(c: &[u8]) -> ([u8; 32], [u8; 32]) {
+    let mut hasher = Sha3_512::new();
+    Update::update(&mut hasher, c);
+    let result = hasher.finalize();
+
+    let mut a = [0u8; 32];
+    let mut b = [0u8; 32];
+    a.copy_from_slice(&result[0..32]);
+    b.copy_from_slice(&result[32..64]);
+
+    (a, b)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basics() {
+        let seed_s = b"qjdhfyritoprlkdjfkrjfbdnzyhdjrtr";
+        let nonce_b = b"a";
+
+        let prf_result = prf(2, seed_s, nonce_b);
+        assert_eq!(prf_result, hex::decode("eedb2631fdc3c6748dc567534e90eb016d087e6c088f3de6f815e854e6a78daf4181a01d80f26c1f9d2816f95e2427b8e261cc45dc2a98f96a81db2235b0f4d02c4a6b2ad94e3444dc921fc0ed378bca86a9eec7179c45be3f6b9809a4770012e7cd143872e45b7bf8f34e6819102d5a55f32a1f9d105a8b3dfe25af75d76f93").unwrap());
     }
 }

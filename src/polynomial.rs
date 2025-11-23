@@ -1,5 +1,8 @@
 use core::fmt;
-use sha3::{Shake128, digest::{ExtendableOutput, Update, XofReader}};
+use sha3::{
+    Shake128,
+    digest::{ExtendableOutput, Update, XofReader},
+};
 use std::{
     marker::PhantomData,
     ops::{Add, Index, IndexMut, Mul, Sub},
@@ -173,7 +176,7 @@ impl<P: PolyParams> PolynomialNTT<P> {
         while j < P::N {
             let mut C = [0u8; 3];
             reader.read(&mut C);
-            let d1 = (C[0] as i64) + (P::N as i64) *(C[1] as i64 % 16);
+            let d1 = (C[0] as i64) + (P::N as i64) * (C[1] as i64 % 16);
             let d2 = (C[1] as i64 / 16) + 16 * (C[2] as i64);
             if d1 < P::Q {
                 a[j] = d1;
