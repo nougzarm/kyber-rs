@@ -1,8 +1,8 @@
-use rand::rngs::OsRng;
 use rand::RngCore;
+use rand::rngs::OsRng;
 
-use crate::{constants::PolyParams, Kyber::pke_scheme::K_PKE};
 use crate::hash::{g, h, j};
+use crate::{constants::PolyParams, kyber::pke_scheme::K_PKE};
 
 pub struct ML_KEM<P: PolyParams>(pub K_PKE<P>);
 
@@ -13,7 +13,7 @@ impl<P: PolyParams> ML_KEM<P> {
 
     /// Algorithm 16 : ML-KEM.KeyGen_internal(d, z)
     /// Uses randomness to generate an encapsulation key and a corresponding decapsulation key.
-    /// 
+    ///
     /// Input : randomness d in B^32
     /// Input : randomness z in B^32
     /// Output : encapsulation key ek in B^(384*k + 32)
@@ -29,7 +29,7 @@ impl<P: PolyParams> ML_KEM<P> {
 
     /// Algorithm 17 : ML-KEM.Encaps_internal(ek, m)
     /// Uses the encapsulation key and randomness to generate a key and an associated ciphertext.
-    /// 
+    ///
     /// Input : encapsulation key ek in B^(384*k + 32)
     /// Input : randomness m in B^32
     /// Output : shared secret key K in B^32
@@ -45,15 +45,15 @@ impl<P: PolyParams> ML_KEM<P> {
 
     /// Algorithm 18 : ML-KEM.Decaps_internal(dk, c)
     /// Uses the decapsulation key to produce a shared secret key from a ciphertext.
-    /// 
+    ///
     /// Input : decapsulation key dk in B^(768*k + 96)
     /// Input : ciphertext c in B^(32 * (d_u*k + d_v))
     /// Output : shared secret key K in B^32
     pub fn decaps_internal(&self, dk: &[u8], c: &[u8]) -> Vec<u8> {
-        let dk_pke = &dk[0 .. 384 * self.0.k];
-        let ek_pke = &dk[384 * self.0.k .. 768 * self.0.k + 32];
-        let h = &dk[768 * self.0.k + 32 .. 768 * self.0.k + 64];
-        let z = &dk[768 * self.0.k + 64 ..];
+        let dk_pke = &dk[0..384 * self.0.k];
+        let ek_pke = &dk[384 * self.0.k..768 * self.0.k + 32];
+        let h = &dk[768 * self.0.k + 32..768 * self.0.k + 64];
+        let z = &dk[768 * self.0.k + 64..];
         let m_prime = self.0.decrypt(dk_pke, c);
 
         let mut g_hash = vec![];
@@ -78,7 +78,7 @@ impl<P: PolyParams> ML_KEM<P> {
 
     /// Algorithm 19 : ML-KEM.KeyGen()
     /// Generates an encapsulation key and a corresponding decapsulation key.
-    /// 
+    ///
     /// Output : encapsulation key ek in B^(384*k + 32)
     /// Output : decapsulation key dk in B^(768*k + 96)
     pub fn key_gen(&self) -> (Vec<u8>, Vec<u8>) {
@@ -93,7 +93,7 @@ impl<P: PolyParams> ML_KEM<P> {
 
     /// Algorithm 20 : ML-KEM.Encaps(ek)
     /// Uses the encapsulation key to generate a shared secret key and an associated ciphertext
-    /// 
+    ///
     /// Input : encapsulation key ek in B^(384*k + 32)
     /// Output : shared secret key K in B^32
     /// Output : ciphertext c in B^(32 * (d_u*k + d_v))
@@ -106,7 +106,7 @@ impl<P: PolyParams> ML_KEM<P> {
 
     /// Algorithm 21 : ML-KEM.Decaps(dk, c)
     /// Uses the decapsulation key to produce a shared secret key from a ciphertext.
-    /// 
+    ///
     /// Input : decapsulation key dk in B^(768*k + 96)
     /// Input : ciphertext c in B^(32 * (d_u*k + d_v))
     /// Output : shared secret key K in B^32
