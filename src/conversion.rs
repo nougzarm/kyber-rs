@@ -85,7 +85,9 @@ mod tests {
     #[test]
     fn basics() {
         let q = KyberParams::Q;
+        assert_eq!(compress(1933, 11, q), 1189);
         assert_eq!(decompress(compress(1933, 11, q), 11, q), 1933);
+        assert_eq!(decompress(2001, 11, q), 3253);
         assert_eq!(compress(decompress(2001, 11, q), 11, q), 2001);
 
         let bytes = b"salut tous le monde. Comment allez vous";
