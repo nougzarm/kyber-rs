@@ -38,7 +38,7 @@ impl<P: PolyParams> K_PKE<P> {
 
         let mut n_var = 0usize;
 
-        let a_ntt: Vec<Vec<PolynomialNTT<P>>> = vec![];
+        let mut a_ntt: Vec<Vec<PolynomialNTT<P>>> = vec![];
         for i in 0..self.k {
             let mut tmp_line = vec![];
             for j in 0..self.k {
@@ -48,6 +48,7 @@ impl<P: PolyParams> K_PKE<P> {
                 input[33] = i as u8;
                 tmp_line.push(PolynomialNTT::<P>::sample_ntt(&input));
             }
+            a_ntt.push(tmp_line);
         }
 
         let mut s: Vec<Polynomial<P>> = vec![];
@@ -106,7 +107,7 @@ impl<P: PolyParams> K_PKE<P> {
     /// Input : message m in B^32
     /// Input : randomness r in B^32
     /// Output : ciphertext c in B^(32 * (d_u * k + d_v))
-    pub fn encrypt(&self, ek: &[u8], m: &[u8], r: &[u8; 32]) -> Vec<u8> {
+    pub fn encrypt(&self, ek: &[u8], m: &[u8; 32], r: &[u8; 32]) -> Vec<u8> {
         let mut n_var = 0usize;
         let mut t_ntt = Vec::with_capacity(self.k);
         for i in 0..self.k {
@@ -242,5 +243,27 @@ impl<P: PolyParams> K_PKE<P> {
 
         let m = ByteEncode(&compressed_w, 1);
         m
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::constants::{KyberParams};
+    use crate::polynomial::PolynomialNTT;
+
+    #[test]
+    fn basics() {
+        let (k, eta_1, eta_2, d_u, d_v) = (3, 2, 2, 10, 4);
+        let pke_scheme = K_PKE::<KyberParams>::new(k, eta_1, eta_2, d_u, d_v);
+
+        let seed = b"Salut de la part de moi meme lee";
+        let (ek, dk) = pke_scheme.key_gen(seed);
+
+        let message = b"Ce message est tres confidentiel";
+        let ciphertext = pke_scheme.encrypt(&ek, message, seed);
+
+        let mess_decrypt = pke_scheme.decrypt(&dk, &ciphertext);
+        assert_eq!(mess_decrypt, message);
     }
 }
