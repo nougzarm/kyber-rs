@@ -10,8 +10,6 @@ pub fn compress(x: i64, d: usize, q: i64) -> i64 {
 }
 
 pub fn decompress(x: i64, d: usize, q: i64) -> i64 {
-    let two_pow_d = 1i64 << d;
-
     let numerator = x * q;
 
     let half_divisor = 1i64 << (d - 1);
@@ -25,7 +23,7 @@ pub fn decompress(x: i64, d: usize, q: i64) -> i64 {
 ///
 /// Input : b in {0, 1}^(8*r)
 /// Output : B in B^r
-pub fn BitsToBytes(bits: BitVec<u8, Lsb0>) -> Vec<u8> {
+pub fn bits_to_bytes(bits: BitVec<u8, Lsb0>) -> Vec<u8> {
     bits.into_vec()
 }
 
@@ -34,7 +32,7 @@ pub fn BitsToBytes(bits: BitVec<u8, Lsb0>) -> Vec<u8> {
 ///
 /// Input : B in B^r
 /// Output : b in {0, 1}^(8*r)
-pub fn BytesToBits(bytes: &[u8]) -> BitVec<u8, Lsb0> {
+pub fn bytes_to_bits(bytes: &[u8]) -> BitVec<u8, Lsb0> {
     BitVec::<u8, Lsb0>::from_vec(bytes.to_vec())
 }
 
@@ -43,16 +41,16 @@ pub fn BytesToBits(bytes: &[u8]) -> BitVec<u8, Lsb0> {
 ///
 /// Input : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
 /// Output : B in B^(32*d)
-pub fn ByteEncode(F: &[i64], d: usize) -> Vec<u8> {
-    let mut bits = bitvec![u8, Lsb0; 0; F.len() * d];
-    for i in 0..F.len() {
-        let a = F[i];
+pub fn byte_encode(f: &[i64], d: usize) -> Vec<u8> {
+    let mut bits = bitvec![u8, Lsb0; 0; f.len() * d];
+    for i in 0..f.len() {
+        let a = f[i];
         for j in 0..d {
             let bit_is_set = ((a >> j) & 1) == 1;
             bits.set(i * d + j, bit_is_set);
         }
     }
-    BitsToBytes(bits)
+    bits_to_bytes(bits)
 }
 
 /// Algorithm 6 : ByteEncode_d(F)
@@ -60,13 +58,13 @@ pub fn ByteEncode(F: &[i64], d: usize) -> Vec<u8> {
 ///
 /// Input : B in B^(32*d)
 /// Output : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
-pub fn ByteDecode(bytes: &[u8], d: usize, q: i64) -> Vec<i64> {
+pub fn byte_decode(bytes: &[u8], d: usize, q: i64) -> Vec<i64> {
     let m = match d {
         12 => q,
         _ => 1i64 << d,
     };
 
-    let bits = BytesToBits(bytes);
+    let bits = bytes_to_bits(bytes);
     let n = bits.len() / d;
     let mut f = vec![0i64; n];
 
@@ -93,7 +91,7 @@ mod tests {
         assert_eq!(compress(decompress(2001, 11, q), 11, q), 2001);
 
         let bytes = b"salut tous le monde. Comment allez vous";
-        assert_eq!(BitsToBytes(BytesToBits(bytes)), bytes);
+        assert_eq!(bits_to_bytes(bytes_to_bits(bytes)), bytes);
 
         let b = bitvec![u8, Lsb0;
             1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1,
@@ -108,11 +106,11 @@ mod tests {
             1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1,
             1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0
         ];
-        assert_eq!(BytesToBits(&BitsToBytes(b.clone())), b);
+        assert_eq!(bytes_to_bits(&bits_to_bytes(b.clone())), b);
 
         let f =
             PolynomialNTT::<KyberParams>::sample_ntt(b"Salut de la part de moi meme le ka").coeffs;
-        let f_rev = ByteDecode(&ByteEncode(&f, 12), 12, q);
+        let f_rev = byte_decode(&byte_encode(&f, 12), 12, q);
         assert_eq!(&f, &f_rev);
     }
 }

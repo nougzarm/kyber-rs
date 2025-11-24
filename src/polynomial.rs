@@ -8,7 +8,7 @@ use std::{
     ops::{Add, Index, IndexMut, Mul, Sub},
 };
 
-use crate::{constants::PolyParams, conversion::BytesToBits};
+use crate::{constants::PolyParams, conversion::bytes_to_bits};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Polynomial<P: PolyParams> {
@@ -55,7 +55,7 @@ impl<P: PolyParams> Polynomial<P> {
             panic!("Unauthorized length for b")
         };
 
-        let b_bits = BytesToBits(b);
+        let b_bits = bytes_to_bits(b);
         let mut coeffs = vec![0i64; P::N];
         for i in 0..P::N {
             let mut x = 0i64;

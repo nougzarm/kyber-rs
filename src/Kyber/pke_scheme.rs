@@ -1,11 +1,11 @@
 use std::marker::PhantomData;
 
 use crate::constants::PolyParams;
-use crate::conversion::{ByteDecode, ByteEncode, compress, decompress};
+use crate::conversion::{byte_decode, byte_encode, compress, decompress};
 use crate::hash::{g, prf};
 use crate::polynomial::{Polynomial, PolynomialNTT};
 
-pub struct K_PKE<P: PolyParams> {
+pub struct KPke<P: PolyParams> {
     pub k: usize,
     eta_1: usize,
     eta_2: usize,
@@ -14,9 +14,9 @@ pub struct K_PKE<P: PolyParams> {
     _marker: std::marker::PhantomData<P>,
 }
 
-impl<P: PolyParams> K_PKE<P> {
+impl<P: PolyParams> KPke<P> {
     pub fn new(k: usize, eta_1: usize, eta_2: usize, d_u: usize, d_v: usize) -> Self {
-        K_PKE::<P> {
+        KPke::<P> {
             k,
             eta_1,
             eta_2,
@@ -89,13 +89,13 @@ impl<P: PolyParams> K_PKE<P> {
 
         let mut ek = Vec::new();
         for poly in &t_ntt {
-            ek.extend(ByteEncode(&poly.coeffs, CONST_D));
+            ek.extend(byte_encode(&poly.coeffs, CONST_D));
         }
         ek.extend_from_slice(&rho);
 
         let mut dk = Vec::new();
         for poly in &s_ntt {
-            dk.extend(ByteEncode(&poly.coeffs, CONST_D));
+            dk.extend(byte_encode(&poly.coeffs, CONST_D));
         }
 
         (ek, dk)
@@ -112,7 +112,7 @@ impl<P: PolyParams> K_PKE<P> {
         let mut t_ntt = Vec::with_capacity(self.k);
         for i in 0..self.k {
             let chunk = &ek[384 * i..384 * (i + 1)];
-            let coeffs = ByteDecode(chunk, 12, P::Q);
+            let coeffs = byte_decode(chunk, 12, P::Q);
             t_ntt.push(PolynomialNTT::<P>::from(coeffs));
         }
         let rho = &ek[384 * self.k..];
@@ -161,7 +161,7 @@ impl<P: PolyParams> K_PKE<P> {
             u.push(&Polynomial::<P>::from_ntt(&pol_tmp) + &e_1[i]);
         }
 
-        let m_bits = ByteDecode(m, 1, P::Q);
+        let m_bits = byte_decode(m, 1, P::Q);
         let mu_coeffs: Vec<i64> = m_bits.into_iter().map(|b| decompress(b, 1, P::Q)).collect();
         let mu = Polynomial::<P>::from(mu_coeffs);
 
@@ -178,7 +178,7 @@ impl<P: PolyParams> K_PKE<P> {
                 .iter()
                 .map(|&c| compress(c, self.d_u, P::Q))
                 .collect();
-            c1.extend(ByteEncode(&compressed, self.d_u as usize));
+            c1.extend(byte_encode(&compressed, self.d_u as usize));
         }
 
         let compressed_v: Vec<i64> = v
@@ -186,7 +186,7 @@ impl<P: PolyParams> K_PKE<P> {
             .iter()
             .map(|&c| compress(c, self.d_v, P::Q))
             .collect();
-        let c2 = ByteEncode(&compressed_v, self.d_v as usize);
+        let c2 = byte_encode(&compressed_v, self.d_v as usize);
 
         c1.extend_from_slice(&c2);
         c1
@@ -203,7 +203,7 @@ impl<P: PolyParams> K_PKE<P> {
 
         let mut u_prime = Vec::with_capacity(self.k);
         for i in 0..self.k {
-            let decode = ByteDecode(
+            let decode = byte_decode(
                 &c_1[32 * self.d_u * i..32 * self.d_u * (i + 1)],
                 self.d_u,
                 P::Q,
@@ -215,7 +215,7 @@ impl<P: PolyParams> K_PKE<P> {
             u_prime.push(Polynomial::<P>::from(coeffs));
         }
 
-        let decoded_v = ByteDecode(c_2, self.d_v, P::Q);
+        let decoded_v = byte_decode(c_2, self.d_v, P::Q);
         let v_coeffs: Vec<i64> = decoded_v
             .into_iter()
             .map(|val| decompress(val, self.d_v, P::Q))
@@ -225,7 +225,7 @@ impl<P: PolyParams> K_PKE<P> {
         let mut s_ntt = Vec::with_capacity(self.k);
         for i in 0..self.k {
             let chunk = &dk[384 * i..384 * (i + 1)];
-            let coeffs = ByteDecode(chunk, 12, P::Q);
+            let coeffs = byte_decode(chunk, 12, P::Q);
             s_ntt.push(PolynomialNTT::<P>::from(coeffs));
         }
 
@@ -241,7 +241,7 @@ impl<P: PolyParams> K_PKE<P> {
             .map(|&coeff| compress(coeff, 1, P::Q))
             .collect();
 
-        let m = ByteEncode(&compressed_w, 1);
+        let m = byte_encode(&compressed_w, 1);
         m
     }
 }
@@ -254,7 +254,7 @@ mod tests {
     #[test]
     fn basics() {
         let (k, eta_1, eta_2, d_u, d_v) = (3, 2, 2, 10, 4);
-        let pke_scheme = K_PKE::<KyberParams>::new(k, eta_1, eta_2, d_u, d_v);
+        let pke_scheme = KPke::<KyberParams>::new(k, eta_1, eta_2, d_u, d_v);
 
         let seed = b"Salut de la part de moi meme lee";
         let (ek, dk) = pke_scheme.key_gen(seed);
