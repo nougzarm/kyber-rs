@@ -76,8 +76,8 @@ impl<P: PolyParams> KPke<P> {
         for i in 0..self.k {
             let mut pol_temp = PolynomialNTT::<P>::from(vec![0i64; P::N]);
 
-            for j in 0..self.k {
-                let product = &a_ntt[i][j] * &s_ntt[j];
+            for (j, poly) in s_ntt.iter().enumerate() {
+                let product = &a_ntt[i][j] * poly;
                 pol_temp = &pol_temp + &product;
             }
 
@@ -152,13 +152,13 @@ impl<P: PolyParams> KPke<P> {
         let y_ntt: Vec<PolynomialNTT<P>> = y.iter().map(|p| p.to_ntt()).collect();
 
         let mut u = Vec::with_capacity(self.k);
-        for i in 0..self.k {
+        for (i, poly) in e_1.iter().enumerate() {
             let mut pol_tmp = PolynomialNTT::<P>::from(vec![0i64; P::N]);
             for j in 0..self.k {
                 let product = &a_ntt[j][i] * &y_ntt[j];
                 pol_tmp = &pol_tmp + &product;
             }
-            u.push(&Polynomial::<P>::from_ntt(&pol_tmp) + &e_1[i]);
+            u.push(&Polynomial::<P>::from_ntt(&pol_tmp) + poly);
         }
 
         let m_bits = byte_decode(m, 1, P::Q);
