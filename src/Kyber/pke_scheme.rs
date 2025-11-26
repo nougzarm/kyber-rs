@@ -241,8 +241,7 @@ impl<P: PolyParams> KPke<P> {
             .map(|&coeff| compress(coeff, 1, P::Q))
             .collect();
 
-        let m = byte_encode(&compressed_w, 1);
-        m
+        byte_encode(&compressed_w, 1)
     }
 }
 

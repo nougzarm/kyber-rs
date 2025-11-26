@@ -13,9 +13,7 @@ pub fn decompress(x: i64, d: usize, q: i64) -> i64 {
     let numerator = x * q;
 
     let half_divisor = 1i64 << (d - 1);
-    let rounded = (numerator + half_divisor) >> d;
-
-    rounded
+    (numerator + half_divisor) >> d
 }
 
 /// Algorithm 3 : BitsToBytes(b)

@@ -58,7 +58,7 @@ impl<P: PolyParams> MlKem<P> {
 
         let mut g_hash = vec![];
         g_hash.extend_from_slice(&m_prime);
-        g_hash.extend_from_slice(&h);
+        g_hash.extend_from_slice(h);
         let (mut k_prime, r_prime) = g(&g_hash);
 
         let mut j_hash = vec![];
