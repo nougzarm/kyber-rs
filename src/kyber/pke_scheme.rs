@@ -36,17 +36,15 @@ impl<P: PolyParams> KPke<P> {
 
         let mut n_var = 0usize;
 
-        let mut a_ntt: Vec<Vec<PolynomialNTT<P>>> = vec![];
+        let mut a_ntt: Vec<PolynomialNTT<P>> = Vec::with_capacity(self.k * self.k);
         for i in 0..self.k {
-            let mut tmp_line = vec![];
             for j in 0..self.k {
                 let mut input = [0u8; 34];
                 input[0..32].copy_from_slice(&rho);
                 input[32] = j as u8;
                 input[33] = i as u8;
-                tmp_line.push(PolynomialNTT::<P>::sample_ntt(&input));
+                a_ntt.push(PolynomialNTT::<P>::sample_ntt(&input));
             }
-            a_ntt.push(tmp_line);
         }
 
         let mut s: Vec<Polynomial<P>> = vec![];
@@ -75,7 +73,7 @@ impl<P: PolyParams> KPke<P> {
             let mut pol_temp = PolynomialNTT::<P>::from(vec![0i64; P::N]);
 
             for (j, poly) in s_ntt.iter().enumerate() {
-                let product = &a_ntt[i][j] * poly;
+                let product = &a_ntt[i * self.k + j] * poly;
                 pol_temp += &product;
             }
 
@@ -107,7 +105,7 @@ impl<P: PolyParams> KPke<P> {
     /// Output : ciphertext c in B^(32 * (d_u * k + d_v))
     pub fn encrypt(&self, ek: &[u8], m: &[u8; 32], r: &[u8; 32]) -> Vec<u8> {
         let mut n_var = 0usize;
-        let mut t_ntt = Vec::with_capacity(self.k);
+        let mut t_ntt = Vec::with_capacity(self.k * self.k);
         for i in 0..self.k {
             let chunk = &ek[384 * i..384 * (i + 1)];
             let coeffs = byte_decode(chunk, 12, P::Q);
@@ -115,17 +113,15 @@ impl<P: PolyParams> KPke<P> {
         }
         let rho = &ek[384 * self.k..];
 
-        let mut a_ntt = Vec::with_capacity(self.k);
+        let mut a_ntt = Vec::with_capacity(self.k * self.k);
         for i in 0..self.k {
-            let mut temp_line = Vec::with_capacity(self.k);
             for j in 0..self.k {
                 let mut input = [0u8; 34];
                 input[0..32].copy_from_slice(rho);
                 input[32] = j as u8;
                 input[33] = i as u8;
-                temp_line.push(PolynomialNTT::<P>::sample_ntt(&input));
+                a_ntt.push(PolynomialNTT::<P>::sample_ntt(&input));
             }
-            a_ntt.push(temp_line);
         }
 
         let mut y = Vec::with_capacity(self.k);
@@ -153,7 +149,7 @@ impl<P: PolyParams> KPke<P> {
         for (i, poly) in e_1.iter().enumerate() {
             let mut pol_tmp = PolynomialNTT::<P>::from(vec![0i64; P::N]);
             for j in 0..self.k {
-                let product = &a_ntt[j][i] * &y_ntt[j];
+                let product = &a_ntt[j * self.k + i] * &y_ntt[j];
                 pol_tmp += &product;
             }
             u.push(&Polynomial::<P>::from_ntt(&pol_tmp) + poly);
