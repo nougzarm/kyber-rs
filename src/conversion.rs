@@ -24,7 +24,7 @@ pub fn bits_to_bytes(bits: &[u8]) -> Vec<u8> {
         panic!("")
     }
 
-    let mut bytes = vec![0u8; (bits.len() + 7) / 8];
+    let mut bytes = vec![0u8; bits.len() / 8];
     for (i, &bit) in bits.iter().enumerate() {
         if bit == 1 {
             bytes[i / 8] |= 1 << (i % 8);
