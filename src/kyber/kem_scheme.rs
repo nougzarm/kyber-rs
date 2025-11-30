@@ -1,5 +1,6 @@
 use rand::RngCore;
 use rand::rngs::OsRng;
+use subtle::{ConditionallySelectable, ConstantTimeEq};
 
 use crate::hash::{g, h, j};
 use crate::{constants::PolyParams, kyber::pke_scheme::KPke};
@@ -69,9 +70,11 @@ impl<P: PolyParams> MlKem<P> {
         let m_prime_slice: [u8; 32] = m_prime.as_slice().try_into().expect("");
         let c_prime = self.0.encrypt(ek_pke, &m_prime_slice, &r_prime);
 
-        if c != c_prime {
-            k_prime = k_bar;
-        };
+        let cond = !(c.ct_eq(&c_prime));
+
+        for (dst, src) in k_prime.iter_mut().zip(k_bar.iter()) {
+            dst.conditional_assign(src, cond);
+        }
 
         k_prime.to_vec()
     }
