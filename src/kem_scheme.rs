@@ -3,7 +3,7 @@ use rand::rngs::OsRng;
 use subtle::{ConditionallySelectable, ConstantTimeEq};
 
 use crate::hash::{g, h, j};
-use crate::{constants::PolyParams, kyber::pke_scheme::KPke};
+use crate::{constants::PolyParams, pke_scheme::KPke};
 
 pub struct MlKem<P: PolyParams>(pub KPke<P>);
 

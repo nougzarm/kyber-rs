@@ -367,7 +367,7 @@ impl<P: PolyParams> IndexMut<usize> for PolynomialNTT<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{constants::KyberParams, kyber::KyberPoly};
+    use crate::{KyberPoly, constants::KyberParams};
 
     #[test]
     fn basics() {
