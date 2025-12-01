@@ -1,17 +1,17 @@
-pub fn compress(x: i32, d: usize, q: i32) -> i32 {
+pub fn compress(x: i16, d: usize, q: i16) -> i16 {
     let two_pow_d = 1i32 << d;
 
-    let numerator = x * two_pow_d;
-    let rounded = (numerator + (q / 2)) / q;
+    let numerator = x as i32 * two_pow_d;
+    let rounded = (numerator + (q as i32 / 2)) / q as i32;
 
-    rounded % two_pow_d
+    (rounded % two_pow_d) as i16
 }
 
-pub fn decompress(x: i32, d: usize, q: i32) -> i32 {
-    let numerator = x * q;
+pub fn decompress(x: i16, d: usize, q: i16) -> i16 {
+    let numerator = x as i32 * q as i32;
 
     let half_divisor = 1i32 << (d - 1);
-    (numerator + half_divisor) >> d
+    ((numerator + half_divisor) >> d) as i16
 }
 
 /// Algorithm 3 (FIPS 203) : BitsToBytes(b)
@@ -54,7 +54,7 @@ pub fn bytes_to_bits(bytes: &[u8]) -> Vec<u8> {
 ///
 /// Input : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
 /// Output : B in B^(32*d)
-pub fn byte_encode(f: &[i32], d: usize) -> Vec<u8> {
+pub fn byte_encode(f: &[i16], d: usize) -> Vec<u8> {
     let mut bits = vec![0u8; f.len() * d];
     for (i, coeff) in f.iter().enumerate() {
         for j in 0..d {
@@ -69,19 +69,19 @@ pub fn byte_encode(f: &[i32], d: usize) -> Vec<u8> {
 ///
 /// Input : B in B^(32*d)
 /// Output : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
-pub fn byte_decode(bytes: &[u8], d: usize, q: i32) -> Vec<i32> {
+pub fn byte_decode(bytes: &[u8], d: usize, q: i16) -> Vec<i16> {
     let m = match d {
         12 => q,
-        _ => 1i32 << d,
+        _ => 1i16 << d,
     };
 
     let bits = bytes_to_bits(bytes);
     let n = bits.len() / d;
-    let mut f = vec![0i32; n];
+    let mut f = vec![0i16; n];
 
     for i in 0..n {
         for j in 0..d {
-            f[i] = (f[i] + (bits[i * d + j] as i32) * (1 << j)).rem_euclid(m)
+            f[i] = (f[i] as i32 + (bits[i * d + j] as i32) * (1 << j)).rem_euclid(m as i32) as i16;
         }
     }
     f

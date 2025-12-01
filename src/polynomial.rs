@@ -12,12 +12,12 @@ use crate::{constants::PolyParams, conversion::bytes_to_bits};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Polynomial<P: PolyParams> {
-    pub coeffs: [i32; 256],
+    pub coeffs: [i16; 256],
     _marker: std::marker::PhantomData<P>,
 }
 
-impl<P: PolyParams> From<[i32; 256]> for Polynomial<P> {
-    fn from(value: [i32; 256]) -> Self {
+impl<P: PolyParams> From<[i16; 256]> for Polynomial<P> {
+    fn from(value: [i16; 256]) -> Self {
         Polynomial::<P> {
             coeffs: value,
             _marker: PhantomData::<P>,
@@ -25,24 +25,24 @@ impl<P: PolyParams> From<[i32; 256]> for Polynomial<P> {
     }
 }
 
-impl<P: PolyParams> From<i32> for Polynomial<P> {
-    fn from(value: i32) -> Self {
-        let mut coeffs = [0i32; 256];
+impl<P: PolyParams> From<i16> for Polynomial<P> {
+    fn from(value: i16) -> Self {
+        let mut coeffs = [0i16; 256];
         coeffs[0] = value;
         Polynomial::<P>::from(coeffs)
     }
 }
 
 impl<P: PolyParams> Polynomial<P> {
-    pub fn new(coeffs: &[i32; 256]) -> Self {
+    pub fn new(coeffs: &[i16; 256]) -> Self {
         Polynomial::<P>::from(*coeffs)
     }
 
-    pub fn from_slice(coeffs: &[i32]) -> Self {
+    pub fn from_slice(coeffs: &[i16]) -> Self {
         if coeffs.len() != 256 {
             panic!("The polynomial must have exactly {} coefficients", 256);
         }
-        let mut new_coeffs = [0i32; 256];
+        let mut new_coeffs = [0i16; 256];
         new_coeffs.copy_from_slice(coeffs);
         Polynomial::<P>::from(new_coeffs)
     }
@@ -62,15 +62,15 @@ impl<P: PolyParams> Polynomial<P> {
         };
 
         let b_bits = bytes_to_bits(b);
-        let mut coeffs = [0i32; 256];
+        let mut coeffs = [0i16; 256];
         for i in 0..P::N {
-            let mut x = 0i32;
+            let mut x = 0i16;
             for j in 0..eta {
-                x += b_bits[2 * i * eta + j] as i32;
+                x += b_bits[2 * i * eta + j] as i16;
             }
-            let mut y = 0i32;
+            let mut y = 0i16;
             for j in 0..eta {
-                y += b_bits[2 * i * eta + eta + j] as i32;
+                y += b_bits[2 * i * eta + eta + j] as i16;
             }
             coeffs[i] = (x - y).rem_euclid(P::Q);
         }
@@ -93,7 +93,7 @@ impl<P: PolyParams> Polynomial<P> {
                 let zeta = zetas[i];
                 i += 1;
                 for j in start..(start + len) {
-                    let t = (zeta * coeffs[j + len]).rem_euclid(P::Q);
+                    let t = (zeta as i32 * coeffs[j + len] as i32).rem_euclid(P::Q as i32) as i16;
                     coeffs[j + len] = (coeffs[j] - t).rem_euclid(P::Q);
                     coeffs[j] = (coeffs[j] + t).rem_euclid(P::Q);
                 }
@@ -124,14 +124,15 @@ impl<P: PolyParams> Polynomial<P> {
                 for j in start..(start + len) {
                     let t = coeffs[j];
                     coeffs[j] = (t + coeffs[j + len]).rem_euclid(P::Q);
-                    coeffs[j + len] = (zeta * (coeffs[j + len] - t)).rem_euclid(P::Q);
+                    coeffs[j + len] =
+                        (zeta as i32 * (coeffs[j + len] - t) as i32).rem_euclid(P::Q as i32) as i16;
                 }
             }
             len *= 2;
         }
 
         for coeff in coeffs.iter_mut() {
-            *coeff = (*coeff * P::N_INV).rem_euclid(P::Q);
+            *coeff = (*coeff as i32 * P::N_INV as i32).rem_euclid(P::Q as i32) as i16;
         }
 
         Polynomial {
@@ -144,7 +145,7 @@ impl<P: PolyParams> Polynomial<P> {
 impl<P: PolyParams> Add for &Polynomial<P> {
     type Output = Polynomial<P>;
     fn add(self, rhs: Self) -> Polynomial<P> {
-        let mut new_coeffs = [0i32; 256];
+        let mut new_coeffs = [0i16; 256];
         for (i, (a, b)) in self.coeffs.iter().zip(rhs.coeffs.iter()).enumerate() {
             new_coeffs[i] = (a + b).rem_euclid(P::Q);
         }
@@ -166,7 +167,7 @@ impl<P: PolyParams> AddAssign<&Polynomial<P>> for Polynomial<P> {
 impl<P: PolyParams> Sub for &Polynomial<P> {
     type Output = Polynomial<P>;
     fn sub(self, rhs: Self) -> Polynomial<P> {
-        let mut new_coeffs = [0i32; 256];
+        let mut new_coeffs = [0i16; 256];
         for (i, (a, b)) in self.coeffs.iter().zip(rhs.coeffs.iter()).enumerate() {
             new_coeffs[i] = (a - b).rem_euclid(P::Q);
         }
@@ -180,11 +181,11 @@ impl<P: PolyParams> Sub for &Polynomial<P> {
 impl<P: PolyParams> Mul for &Polynomial<P> {
     type Output = Polynomial<P>;
     fn mul(self, rhs: Self) -> Self::Output {
-        let mut new_coeffs = [0i32; 256];
+        let mut new_coeffs = [0i16; 256];
 
         for i in 0..P::N {
             for j in 0..P::N {
-                let pdt = self.coeffs[i] * rhs.coeffs[j];
+                let pdt = (self.coeffs[i] as i32 * rhs.coeffs[j] as i32) as i16;
 
                 let k = i + j;
                 if k < P::N {
@@ -238,7 +239,7 @@ impl<P: PolyParams> fmt::Display for Polynomial<P> {
 }
 
 impl<P: PolyParams> Index<usize> for Polynomial<P> {
-    type Output = i32;
+    type Output = i16;
     fn index(&self, index: usize) -> &Self::Output {
         &self.coeffs[index]
     }
@@ -252,12 +253,12 @@ impl<P: PolyParams> IndexMut<usize> for Polynomial<P> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PolynomialNTT<P: PolyParams> {
-    pub coeffs: [i32; 256],
+    pub coeffs: [i16; 256],
     _marker: std::marker::PhantomData<P>,
 }
 
-impl<P: PolyParams> From<[i32; 256]> for PolynomialNTT<P> {
-    fn from(value: [i32; 256]) -> Self {
+impl<P: PolyParams> From<[i16; 256]> for PolynomialNTT<P> {
+    fn from(value: [i16; 256]) -> Self {
         PolynomialNTT::<P> {
             coeffs: value,
             _marker: PhantomData::<P>,
@@ -266,11 +267,11 @@ impl<P: PolyParams> From<[i32; 256]> for PolynomialNTT<P> {
 }
 
 impl<P: PolyParams> PolynomialNTT<P> {
-    pub fn from_slice(coeffs: &[i32]) -> Self {
+    pub fn from_slice(coeffs: &[i16]) -> Self {
         if coeffs.len() != 256 {
             panic!("The polynomial must have exactly {} coefficients", 256);
         }
-        let mut new_coeffs = [0i32; 256];
+        let mut new_coeffs = [0i16; 256];
         new_coeffs.copy_from_slice(coeffs);
         PolynomialNTT::<P>::from(new_coeffs)
     }
@@ -280,7 +281,7 @@ impl<P: PolyParams> PolynomialNTT<P> {
     /// Input : B in B^34
     /// Output : a in PolynomialNTT
     pub fn sample_ntt(bytes: &[u8; 34]) -> Self {
-        let mut a = [0i32; 256];
+        let mut a = [0i16; 256];
         let mut hasher = Shake128::default();
         hasher.update(bytes);
         let mut reader = hasher.finalize_xof();
@@ -288,8 +289,8 @@ impl<P: PolyParams> PolynomialNTT<P> {
         while j < P::N {
             let mut c = [0u8; 3];
             reader.read(&mut c);
-            let d1 = (c[0] as i32) + (P::N as i32) * (c[1] as i32 % 16);
-            let d2 = (c[1] as i32 / 16) + 16 * (c[2] as i32);
+            let d1 = (c[0] as i16) + (P::N as i16) * (c[1] as i16 % 16);
+            let d2 = (c[1] as i16 / 16) + 16 * (c[2] as i16);
             if d1 < P::Q {
                 a[j] = d1;
                 j += 1;
@@ -306,7 +307,7 @@ impl<P: PolyParams> PolynomialNTT<P> {
 impl<P: PolyParams> Add for &PolynomialNTT<P> {
     type Output = PolynomialNTT<P>;
     fn add(self, rhs: Self) -> PolynomialNTT<P> {
-        let mut new_coeffs = [0i32; 256];
+        let mut new_coeffs = [0i16; 256];
         for (i, (a, b)) in self.coeffs.iter().zip(rhs.coeffs.iter()).enumerate() {
             new_coeffs[i] = (a + b).rem_euclid(P::Q);
         }
@@ -328,16 +329,20 @@ impl<P: PolyParams> AddAssign<&PolynomialNTT<P>> for PolynomialNTT<P> {
 impl<P: PolyParams> Mul for &PolynomialNTT<P> {
     type Output = PolynomialNTT<P>;
     fn mul(self, rhs: Self) -> Self::Output {
-        let mut new_coeffs = [0i32; 256];
+        let mut new_coeffs = [0i16; 256];
 
         let zetas = P::zetas();
         for i in 0..128 {
-            let gamma = ((zetas[i] * zetas[i]).rem_euclid(P::Q) * P::ZETA).rem_euclid(P::Q);
-            new_coeffs[2 * i] = (self[2 * i] * rhs[2 * i]
-                + (self[2 * i + 1] * rhs[2 * i + 1]).rem_euclid(P::Q) * gamma)
-                .rem_euclid(P::Q);
-            new_coeffs[2 * i + 1] =
-                (self[2 * i] * rhs[2 * i + 1] + self[2 * i + 1] * rhs[2 * i]).rem_euclid(P::Q);
+            let gamma = ((zetas[i] as i32 * zetas[i] as i32).rem_euclid(P::Q as i32)
+                * P::ZETA as i32)
+                .rem_euclid(P::Q as i32) as i16;
+            new_coeffs[2 * i] = (self[2 * i] as i32 * rhs[2 * i] as i32
+                + (self[2 * i + 1] as i32 * rhs[2 * i + 1] as i32).rem_euclid(P::Q as i32)
+                    * gamma as i32)
+                .rem_euclid(P::Q as i32) as i16;
+            new_coeffs[2 * i + 1] = (self[2 * i] as i32 * rhs[2 * i + 1] as i32
+                + self[2 * i + 1] as i32 * rhs[2 * i] as i32)
+                .rem_euclid(P::Q as i32) as i16;
         }
         PolynomialNTT::<P> {
             coeffs: new_coeffs,
@@ -347,7 +352,7 @@ impl<P: PolyParams> Mul for &PolynomialNTT<P> {
 }
 
 impl<P: PolyParams> Index<usize> for PolynomialNTT<P> {
-    type Output = i32;
+    type Output = i16;
     fn index(&self, index: usize) -> &Self::Output {
         &self.coeffs[index]
     }
@@ -366,22 +371,22 @@ mod tests {
 
     #[test]
     fn basics() {
-        let mut f = KyberPoly::from(0i32);
-        let mut g = KyberPoly::from(1i32);
-        (f[255], f[2]) = (6i32, 1i32);
-        (g[19], g[3]) = (43i32, 92i32);
+        let mut f = KyberPoly::from(0i16);
+        let mut g = KyberPoly::from(1i16);
+        (f[255], f[2]) = (6i16, 1i16);
+        (g[19], g[3]) = (43i16, 92i16);
         println!("Polynomial f + g: {}", &f + &g);
         println!("Polynomial f * g: {}", &f * &g);
 
-        let mut a_coeffs: Vec<i32> = vec![1, 0, 2, 3, 18, 32, 72, 21, 23, 1, 0, 9, 287, 23];
-        a_coeffs.extend_from_slice(&[0i32; KyberParams::N - 14]);
+        let mut a_coeffs: Vec<i16> = vec![1, 0, 2, 3, 18, 32, 72, 21, 23, 1, 0, 9, 287, 23];
+        a_coeffs.extend_from_slice(&[0i16; KyberParams::N - 14]);
         let a = KyberPoly::from_slice(&a_coeffs);
         assert_eq!(KyberPoly::from_ntt(&a.to_ntt()).coeffs, a.coeffs);
 
-        let mut p1_coeffs: Vec<i32> = vec![1, 2, 4, 4, 3, 1, 6, 6, 4, 3];
-        p1_coeffs.extend_from_slice(&[0i32; KyberParams::N - 10]);
-        let mut p2_coeffs: Vec<i32> = vec![3, 4, 8, 10, 27, 273, 12, 982, 12, 42, 9];
-        p2_coeffs.extend_from_slice(&[0i32; KyberParams::N - 11]);
+        let mut p1_coeffs: Vec<i16> = vec![1, 2, 4, 4, 3, 1, 6, 6, 4, 3];
+        p1_coeffs.extend_from_slice(&[0i16; KyberParams::N - 10]);
+        let mut p2_coeffs: Vec<i16> = vec![3, 4, 8, 10, 27, 273, 12, 982, 12, 42, 9];
+        p2_coeffs.extend_from_slice(&[0i16; KyberParams::N - 11]);
         let p1 = KyberPoly::from_slice(&p1_coeffs);
         let p2 = KyberPoly::from_slice(&p2_coeffs);
         assert_eq!(
