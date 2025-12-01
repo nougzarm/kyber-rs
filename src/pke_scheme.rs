@@ -1,3 +1,5 @@
+use zeroize::{Zeroize, ZeroizeOnDrop};
+
 use crate::constants::PolyParams;
 use crate::conversion::{byte_decode, byte_encode, compress, decompress};
 use crate::hash::{g, prf};
@@ -24,6 +26,7 @@ impl<const K: usize, P: PolyParams> KPke<K, P> {
     }
 }
 
+#[derive(Zeroize, ZeroizeOnDrop)]
 pub struct PkeDecryptKey<const K: usize>(pub [[u8; 384]; K]);
 
 pub struct PkeEncryptKey<const K: usize>(pub [[u8; 384]; K], pub [u8; 32]);

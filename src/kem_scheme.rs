@@ -3,6 +3,7 @@ use rand::rngs::OsRng;
 use sha3::digest::Update;
 use sha3::{Digest, Sha3_256, Sha3_512};
 use subtle::{ConditionallySelectable, ConstantTimeEq};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::hash::{g, j};
 use crate::pke_scheme::{PkeDecryptKey, PkeEncryptKey};
@@ -17,6 +18,7 @@ impl<const K: usize, P: PolyParams> MlKem<K, P> {
     }
 }
 
+#[derive(Zeroize, ZeroizeOnDrop)]
 pub struct KemDecapsKey<const K: usize>(pub [[u8; 384]; K], pub [[u8; 384]; K], pub [u8; 96]);
 
 impl<const K: usize> KemDecapsKey<K> {
