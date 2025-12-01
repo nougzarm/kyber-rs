@@ -1,5 +1,5 @@
-use rand::RngCore;
 use rand::rngs::OsRng;
+use rand::{CryptoRng, RngCore};
 use sha3::digest::Update;
 use sha3::{Digest, Sha3_256, Sha3_512};
 use subtle::{ConditionallySelectable, ConstantTimeEq};
@@ -144,12 +144,12 @@ impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
     ///
     /// Output : encapsulation key ek in B^(384*k + 32)
     /// Output : decapsulation key dk in B^(768*k + 96)
-    fn key_gen(&self) -> (Self::EncapsKey, Self::DecapsKey) {
+    fn key_gen<R: RngCore + CryptoRng>(&self, rng: &mut R) -> (Self::EncapsKey, Self::DecapsKey) {
         let mut d = [0u8; 32];
-        OsRng.fill_bytes(&mut d);
+        rng.fill_bytes(&mut d);
 
         let mut z = [0u8; 32];
-        OsRng.fill_bytes(&mut z);
+        rng.fill_bytes(&mut z);
 
         self.key_gen_internal(&d, &z)
     }
@@ -200,7 +200,7 @@ mod tests {
         let k_decaps = kem_scheme.decaps_internal(&dk, &c);
         assert_eq!(k_decaps, k);
 
-        let (ek, dk) = kem_scheme.key_gen();
+        let (ek, dk) = kem_scheme.key_gen(&mut OsRng);
 
         let (k, c) = kem_scheme.encaps(&ek);
 

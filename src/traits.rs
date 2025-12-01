@@ -1,3 +1,4 @@
+use rand::{CryptoRng, RngCore};
 pub trait PkeScheme {
     type DecryptKey;
     type EncryptKey;
@@ -15,7 +16,7 @@ pub trait KemScheme {
 
     fn key_gen_internal(&self, d: &[u8; 32], z: &[u8; 32]) -> (Self::EncapsKey, Self::DecapsKey);
 
-    fn key_gen(&self) -> (Self::EncapsKey, Self::DecapsKey);
+    fn key_gen<R: RngCore + CryptoRng>(&self, rng: &mut R) -> (Self::EncapsKey, Self::DecapsKey);
 
     fn encaps_internal(&self, ek: &Self::EncapsKey, m: &[u8; 32]) -> (Vec<u8>, Vec<u8>);
 

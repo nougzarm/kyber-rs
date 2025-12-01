@@ -2,13 +2,14 @@ use hex;
 use kyber_rs::constants::KyberParams;
 use kyber_rs::kem_scheme::{KemDecapsKey, KemEncapsKey, MlKem};
 use kyber_rs::traits::KemScheme;
+use rand::rngs::OsRng;
 
 fn run_kem_test<const K: usize>(eta_1: usize, eta_2: usize, du: usize, dv: usize, test_name: &str) {
     println!("\n--- Running the test : {} ---", test_name);
 
     let kem = MlKem::<K, KyberParams>::new(eta_1, eta_2, du, dv);
 
-    let (ek, dk) = kem.key_gen();
+    let (ek, dk) = kem.key_gen(&mut OsRng);
     println!(
         "  Generated keys (ek: {} bytes, dk: {} bytes)",
         KemEncapsKey::<K>::len(),
