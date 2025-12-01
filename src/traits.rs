@@ -20,7 +20,11 @@ pub trait KemScheme {
 
     fn encaps_internal(&self, ek: &Self::EncapsKey, m: &[u8; 32]) -> (Vec<u8>, Vec<u8>);
 
-    fn encaps(&self, ek: &Self::EncapsKey) -> (Vec<u8>, Vec<u8>);
+    fn encaps<R: RngCore + CryptoRng>(
+        &self,
+        ek: &Self::EncapsKey,
+        rng: &mut R,
+    ) -> (Vec<u8>, Vec<u8>);
 
     fn decaps_internal(&self, dk: &Self::DecapsKey, c: &[u8]) -> Vec<u8>;
 

@@ -16,7 +16,7 @@ fn run_kem_test<const K: usize>(eta_1: usize, eta_2: usize, du: usize, dv: usize
         KemDecapsKey::<K>::len()
     );
 
-    let (k_encaps, c) = kem.encaps(&ek);
+    let (k_encaps, c) = kem.encaps(&ek, &mut OsRng);
     println!("  Encapsulated key (K) : {}", hex::encode(&k_encaps));
     println!("  Ciphertext generated (c) : {} bytes", c.len());
 

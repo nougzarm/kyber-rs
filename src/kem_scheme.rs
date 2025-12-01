@@ -1,4 +1,3 @@
-use rand::rngs::OsRng;
 use rand::{CryptoRng, RngCore};
 use sha3::digest::Update;
 use sha3::{Digest, Sha3_256, Sha3_512};
@@ -160,9 +159,13 @@ impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
     /// Input : encapsulation key ek in B^(384*k + 32)
     /// Output : shared secret key K in B^32
     /// Output : ciphertext c in B^(32 * (d_u*k + d_v))
-    fn encaps(&self, ek: &Self::EncapsKey) -> (Vec<u8>, Vec<u8>) {
+    fn encaps<R: RngCore + CryptoRng>(
+        &self,
+        ek: &Self::EncapsKey,
+        rng: &mut R,
+    ) -> (Vec<u8>, Vec<u8>) {
         let mut m = [0u8; 32];
-        OsRng.fill_bytes(&mut m);
+        rng.fill_bytes(&mut m);
 
         self.encaps_internal(ek, &m)
     }
@@ -182,6 +185,7 @@ impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
 mod tests {
     use super::*;
     use crate::{constants::KyberParams, hash::h};
+    use rand::rngs::OsRng;
 
     #[test]
     fn basics() {
@@ -202,7 +206,7 @@ mod tests {
 
         let (ek, dk) = kem_scheme.key_gen(&mut OsRng);
 
-        let (k, c) = kem_scheme.encaps(&ek);
+        let (k, c) = kem_scheme.encaps(&ek, &mut OsRng);
 
         let k_decaps = kem_scheme.decaps(&dk, &c);
         assert_eq!(k_decaps, k);
