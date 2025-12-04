@@ -34,9 +34,13 @@ impl<const K: usize> KemEncapsKey<K> {
     }
 }
 
+#[derive(Zeroize, ZeroizeOnDrop)]
+pub struct KemSharedSecret(pub [u8; 32]);
+
 impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
     type DecapsKey = KemDecapsKey<K>;
     type EncapsKey = KemEncapsKey<K>;
+    type SharedSecret = KemSharedSecret;
 
     /// Algorithm 16 (FIPS 203) : ML-KEM.KeyGen_internal(d, z)
     /// Uses randomness to generate an encapsulation key and a corresponding decapsulation key.
@@ -74,7 +78,7 @@ impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
     /// Input : randomness m in B^32
     /// Output : shared secret key K in B^32
     /// Output : ciphertext c in B^(32 * (d_u*k + d_v))
-    fn encaps_internal(&self, ek: &Self::EncapsKey, m: &[u8; 32]) -> (Vec<u8>, Vec<u8>) {
+    fn encaps_internal(&self, ek: &Self::EncapsKey, m: &[u8; 32]) -> (Self::SharedSecret, Vec<u8>) {
         // g function from hash.rs
         let mut g_hasher = Sha3_512::new();
         Update::update(&mut g_hasher, m);
@@ -98,7 +102,7 @@ impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
 
         let c = self.0.encrypt(&PkeEncryptKey::<K>(ek.0, ek.1), m, &r);
 
-        (k.to_vec(), c)
+        (KemSharedSecret(k), c)
     }
 
     /// Algorithm 18 (FIPS 203) : ML-KEM.Decaps_internal(dk, c)
@@ -107,7 +111,7 @@ impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
     /// Input : decapsulation key dk in B^(768*k + 96)
     /// Input : ciphertext c in B^(32 * (d_u*k + d_v))
     /// Output : shared secret key K in B^32
-    fn decaps_internal(&self, dk: &Self::DecapsKey, c: &[u8]) -> Vec<u8> {
+    fn decaps_internal(&self, dk: &Self::DecapsKey, c: &[u8]) -> Self::SharedSecret {
         let dk_pke = PkeDecryptKey(dk.0);
 
         let mut ek_pke_1 = [0u8; 32];
@@ -134,7 +138,7 @@ impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
             dst.conditional_assign(src, cond);
         }
 
-        k_prime.to_vec()
+        KemSharedSecret(k_prime)
     }
 
     /// Algorithm 19 (FIPS 203) : ML-KEM.KeyGen()
@@ -162,7 +166,7 @@ impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
         &self,
         ek: &Self::EncapsKey,
         rng: &mut R,
-    ) -> (Vec<u8>, Vec<u8>) {
+    ) -> (Self::SharedSecret, Vec<u8>) {
         let mut m = [0u8; 32];
         rng.fill_bytes(&mut m);
 
@@ -175,7 +179,7 @@ impl<const K: usize, P: PolyParams> KemScheme for MlKem<K, P> {
     /// Input : decapsulation key dk in B^(768*k + 96)
     /// Input : ciphertext c in B^(32 * (d_u*k + d_v))
     /// Output : shared secret key K in B^32
-    fn decaps(&self, dk: &Self::DecapsKey, c: &[u8]) -> Vec<u8> {
+    fn decaps(&self, dk: &Self::DecapsKey, c: &[u8]) -> Self::SharedSecret {
         self.decaps_internal(dk, c)
     }
 }
@@ -201,13 +205,13 @@ mod tests {
                 .unwrap());
 
         let k_decaps = kem_scheme.decaps_internal(&dk, &c);
-        assert_eq!(k_decaps, k);
+        assert_eq!(k_decaps.0, k.0);
 
         let (ek, dk) = kem_scheme.key_gen(&mut OsRng);
 
         let (k, c) = kem_scheme.encaps(&ek, &mut OsRng);
 
         let k_decaps = kem_scheme.decaps(&dk, &c);
-        assert_eq!(k_decaps, k);
+        assert_eq!(k_decaps.0, k.0);
     }
 }

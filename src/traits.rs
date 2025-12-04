@@ -13,20 +13,21 @@ pub trait PkeScheme {
 pub trait KemScheme {
     type DecapsKey;
     type EncapsKey;
+    type SharedSecret;
 
     fn key_gen_internal(&self, d: &[u8; 32], z: &[u8; 32]) -> (Self::EncapsKey, Self::DecapsKey);
 
     fn key_gen<R: RngCore + CryptoRng>(&self, rng: &mut R) -> (Self::EncapsKey, Self::DecapsKey);
 
-    fn encaps_internal(&self, ek: &Self::EncapsKey, m: &[u8; 32]) -> (Vec<u8>, Vec<u8>);
+    fn encaps_internal(&self, ek: &Self::EncapsKey, m: &[u8; 32]) -> (Self::SharedSecret, Vec<u8>);
 
     fn encaps<R: RngCore + CryptoRng>(
         &self,
         ek: &Self::EncapsKey,
         rng: &mut R,
-    ) -> (Vec<u8>, Vec<u8>);
+    ) -> (Self::SharedSecret, Vec<u8>);
 
-    fn decaps_internal(&self, dk: &Self::DecapsKey, c: &[u8]) -> Vec<u8>;
+    fn decaps_internal(&self, dk: &Self::DecapsKey, c: &[u8]) -> Self::SharedSecret;
 
-    fn decaps(&self, dk: &Self::DecapsKey, c: &[u8]) -> Vec<u8>;
+    fn decaps(&self, dk: &Self::DecapsKey, c: &[u8]) -> Self::SharedSecret;
 }

@@ -17,14 +17,14 @@ fn run_kem_test<const K: usize>(eta_1: usize, eta_2: usize, du: usize, dv: usize
     );
 
     let (k_encaps, c) = kem.encaps(&ek, &mut OsRng);
-    println!("  Encapsulated key (K) : {}", hex::encode(&k_encaps));
+    println!("  Encapsulated key (K) : {}", hex::encode(&k_encaps.0));
     println!("  Ciphertext generated (c) : {} bytes", c.len());
 
     let k_decaps = kem.decaps(&dk, &c);
-    println!("  Decapsulated key (K') : {}", hex::encode(&k_decaps));
+    println!("  Decapsulated key (K') : {}", hex::encode(&k_decaps.0));
 
     assert_eq!(
-        k_encaps, k_decaps,
+        k_encaps.0, k_decaps.0,
         "TEST {} FAILED: Keys do not match !",
         test_name
     );
