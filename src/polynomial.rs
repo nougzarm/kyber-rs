@@ -1,7 +1,7 @@
 use core::fmt;
 use sha3::{
-    Shake128,
     digest::{ExtendableOutput, Update, XofReader},
+    Shake128,
 };
 use std::{
     marker::PhantomData,
@@ -367,7 +367,7 @@ impl<P: PolyParams> IndexMut<usize> for PolynomialNTT<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{KyberPoly, constants::KyberParams};
+    use crate::{constants::KyberParams, KyberPoly};
 
     #[test]
     fn basics() {

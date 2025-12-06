@@ -1,7 +1,14 @@
 [package]
 name = "kyber-rs"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+authors = ["nougzarm <nougzar.ouzoev@hotmail.fr>"]
+description = "A pure Rust, secure and robust implementation of FIPS 203 (ML-KEM)"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nougzarm/kyber-rs"
+readme = "README.md"
+keywords = ["crypto", "post-quantum", "kyber", "ml-kem", "kem", "k-pke"]
+categories = ["cryptography"]
 
 [dependencies]
 hex = "0.4.3"
