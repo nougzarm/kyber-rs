@@ -50,7 +50,7 @@ impl<P: PolyParams> Polynomial<P> {
     /// Algorithm 8 (FIPS 203) : SimplePolyCBD_eta(B)
     ///
     /// Input : B in B^(64*eta)
-    /// avec eta dans {2, 3}
+    /// with eta in {2, 3}
     /// Output : f in Polynomial
     pub fn sample_poly_cbd(b: &[u8], eta: usize) -> Result<Self, Error> {
         if (eta != 2) && (eta != 3) {
