@@ -180,7 +180,8 @@ impl<P: PolyParams> Mul for &Polynomial<P> {
 
         for i in 0..P::N {
             for j in 0..P::N {
-                let pdt = (self.coeffs[i] as i32 * rhs.coeffs[j] as i32) as i16;
+                let pdt =
+                    (self.coeffs[i] as i32 * rhs.coeffs[j] as i32).rem_euclid(P::Q as i32) as i16;
 
                 let k = i + j;
                 if k < P::N {
