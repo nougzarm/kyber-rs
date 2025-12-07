@@ -23,39 +23,102 @@ pub fn prf(eta: usize, s: &[u8; 32], b: &[u8; 1]) -> Result<Vec<u8>, Error> {
 
 /// Matches the definition in (4.4 FIPS 203)
 /// H : B* -> B^32
-pub fn h(s: &[u8]) -> [u8; 32] {
-    let mut hasher = Sha3_256::new();
-    Update::update(&mut hasher, s);
+#[derive(Default)]
+pub struct H {
+    hasher: Sha3_256,
+}
 
-    hasher.finalize().into()
+impl H {
+    pub fn new() -> Self {
+        Self {
+            hasher: Sha3_256::new(),
+        }
+    }
+
+    pub fn absorb(&mut self, data: &[u8]) {
+        Update::update(&mut self.hasher, data);
+    }
+
+    pub fn squeeze(self) -> [u8; 32] {
+        self.hasher.finalize().into()
+    }
+
+    pub fn evaluate(s: &[u8]) -> [u8; 32] {
+        let mut hasher = Self::new();
+        hasher.absorb(s);
+
+        hasher.squeeze()
+    }
 }
 
 /// Matches the definition in (4.4 FIPS 203)
 /// J : B* -> B^32
-pub fn j(s: &[u8]) -> [u8; 32] {
-    let mut hasher = Shake256::default();
-    hasher.update(s);
+#[derive(Default)]
+pub struct J {
+    hasher: Shake256,
+}
 
-    let mut reader = hasher.finalize_xof();
-    let mut output = [0u8; 32];
-    reader.read(&mut output);
+impl J {
+    pub fn new() -> Self {
+        Self {
+            hasher: Shake256::default(),
+        }
+    }
 
-    output
+    pub fn absorb(&mut self, data: &[u8]) {
+        self.hasher.update(data);
+    }
+
+    pub fn squeeze(self) -> [u8; 32] {
+        let mut reader = self.hasher.finalize_xof();
+        let mut output = [0u8; 32];
+        reader.read(&mut output);
+
+        output
+    }
+
+    pub fn evaluate(s: &[u8]) -> [u8; 32] {
+        let mut hasher = Self::new();
+        hasher.absorb(s);
+
+        hasher.squeeze()
+    }
 }
 
 /// Matches the definition in (4.5 FIPS 203)
 /// G : B* -> B^32 x B^32
-pub fn g(c: &[u8]) -> ([u8; 32], [u8; 32]) {
-    let mut hasher = Sha3_512::new();
-    Update::update(&mut hasher, c);
-    let result = hasher.finalize();
+#[derive(Default)]
+pub struct G {
+    hasher: Sha3_512,
+}
 
-    let mut a = [0u8; 32];
-    let mut b = [0u8; 32];
-    a.copy_from_slice(&result[0..32]);
-    b.copy_from_slice(&result[32..64]);
+impl G {
+    pub fn new() -> Self {
+        Self {
+            hasher: Sha3_512::new(),
+        }
+    }
 
-    (a, b)
+    pub fn absorb(&mut self, data: &[u8]) {
+        Update::update(&mut self.hasher, data);
+    }
+
+    pub fn squeeze(self) -> ([u8; 32], [u8; 32]) {
+        let result = self.hasher.finalize();
+        let mut a = [0u8; 32];
+        let mut b = [0u8; 32];
+        a.copy_from_slice(&result[0..32]);
+        b.copy_from_slice(&result[32..64]);
+
+        (a, b)
+    }
+
+    pub fn evaluate(c: &[u8]) -> ([u8; 32], [u8; 32]) {
+        let mut hasher = Self::new();
+        hasher.absorb(c);
+
+        hasher.squeeze()
+    }
 }
 
 #[cfg(test)]
@@ -70,21 +133,21 @@ mod tests {
         let prf_result = prf(2, seed_s, nonce_b).unwrap();
         assert_eq!(prf_result, hex::decode("eedb2631fdc3c6748dc567534e90eb016d087e6c088f3de6f815e854e6a78daf4181a01d80f26c1f9d2816f95e2427b8e261cc45dc2a98f96a81db2235b0f4d02c4a6b2ad94e3444dc921fc0ed378bca86a9eec7179c45be3f6b9809a4770012e7cd143872e45b7bf8f34e6819102d5a55f32a1f9d105a8b3dfe25af75d76f93").unwrap());
 
-        let h_result = h(seed_s);
+        let h_result = H::evaluate(seed_s);
         assert_eq!(
             h_result.to_vec(),
             hex::decode("af791f788a6048e5f16b9ee9ef12add7a3fcdf2d615f79960c588bdc9824178f")
                 .unwrap()
         );
 
-        let j_result = j(seed_s);
+        let j_result = J::evaluate(seed_s);
         assert_eq!(
             j_result.to_vec(),
             hex::decode("1ffbe9a12ca007f5e869838bd0ba33284554800575b87b1023bbfe41a7332b7a")
                 .unwrap()
         );
 
-        let (g_a, g_b) = g(seed_s);
+        let (g_a, g_b) = G::evaluate(seed_s);
         assert_eq!(
             (g_a.to_vec(), g_b.to_vec()),
             (

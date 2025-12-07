@@ -2,7 +2,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::constants::PolyParams;
 use crate::conversion::{byte_decode, byte_encode, compress, decompress};
-use crate::hash::{g, prf};
+use crate::hash::{prf, G};
 use crate::params::SecurityLevel;
 use crate::polynomial::{Polynomial, PolynomialNTT};
 use crate::traits::PkeScheme;
@@ -44,7 +44,7 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
         d_ext[0..32].copy_from_slice(d);
         d_ext[32] = K as u8;
 
-        let (rho, gamma) = g(&d_ext);
+        let (rho, gamma) = G::evaluate(&d_ext);
 
         let mut n_var = 0u8;
 
