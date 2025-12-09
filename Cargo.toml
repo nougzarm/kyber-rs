@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/nougzarm/kyber-nz"
 documentation = "https://docs.rs/kyber-nz"
 readme = "README.md"
-keywords = ["crypto", "post-quantum", "kyber", "ml-kem", "kem", "k-pke"]
+keywords = ["crypto", "post-quantum", "kyber", "ml-kem", "kem"]
 categories = ["cryptography"]
 exclude = [
     "fuzz/*",
