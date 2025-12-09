@@ -1,8 +1,8 @@
 use hex;
-use kyber_rs::constants::KyberParams;
-use kyber_rs::kem_scheme::{KemDecapsKey, KemEncapsKey, MlKem};
-use kyber_rs::params::{Kyber1024Params, Kyber512Params, Kyber768Params, SecurityLevel};
-use kyber_rs::traits::KemScheme;
+use kyber_nz::constants::KyberParams;
+use kyber_nz::kem_scheme::{KemDecapsKey, KemEncapsKey, MlKem};
+use kyber_nz::params::{Kyber1024Params, Kyber512Params, Kyber768Params, SecurityLevel};
+use kyber_nz::traits::KemScheme;
 use rand::rngs::OsRng;
 
 fn run_kem_test<const K: usize, S: SecurityLevel>(test_name: &str) {

@@ -1,7 +1,7 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use kyber_rs::Kyber768;
-use kyber_rs::traits::KemScheme;
+use kyber_nz::Kyber768;
+use kyber_nz::traits::KemScheme;
 
 fuzz_target!(|data: &[u8]| {
     if data.len() < 97 {

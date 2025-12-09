@@ -21,8 +21,8 @@
 //! ## 🚀 Quick Start (ML-KEM-768)
 //!
 //! ```rust
-//! use kyber_rs::Kyber768; // Alias for ML-KEM-768
-//! use kyber_rs::traits::KemScheme;
+//! use kyber_nz::Kyber768; // Alias for ML-KEM-768
+//! use kyber_nz::traits::KemScheme;
 //! use rand::rngs::OsRng;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
