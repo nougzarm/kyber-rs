@@ -28,3 +28,18 @@ jobs:
       
     - name: Run tests
       run: cargo test --verbose
+
+  fuzz:
+    name: Fuzzing Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust Nightly
+        uses: dtolnay/rust-toolchain@nightly
+        
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+        
+      - name: Run Fuzzing (Short duration)
+        run: cargo +nightly fuzz run fuzz_target_1 -- -max_total_time=120
