@@ -1,4 +1,4 @@
-//! # kyber-rs (ML-KEM / FIPS 203)
+//! # kyber-nz (ML-KEM / FIPS 203)
 //!
 //! A **pure Rust**, **secure**, and **robust** implementation of the **FIPS 203** (Module-Lattice-Based Key-Encapsulation Mechanism) standard,
 //! formerly known as **CRYSTALS-Kyber**.

@@ -83,7 +83,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kyber-rs"
+name = "kyber-nz"
 version = "0.1.0"
 dependencies = [
  "hex",

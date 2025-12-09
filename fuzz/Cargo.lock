@@ -129,7 +129,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kyber-rs"
+name = "kyber-nz"
 version = "0.1.0"
 dependencies = [
  "hex",
@@ -140,10 +140,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "kyber-rs-fuzz"
+name = "kyber-nz-fuzz"
 version = "0.0.0"
 dependencies = [
- "kyber-rs",
+ "kyber-nz",
  "libfuzzer-sys",
 ]
 

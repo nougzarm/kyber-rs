@@ -1,6 +1,6 @@
-# kyber-rs: ML-KEM (FIPS 203) in Rust
+# kyber-nz: ML-KEM (FIPS 203) in Rust
 
-**kyber-rs** is a pure Rust implementation of the **FIPS 203 (Module-Lattice-Based Key-Encapsulation Mechanism)** standard, formerly known as **CRYSTALS-Kyber**.
+**kyber-nz** is a pure Rust implementation of the **FIPS 203 (Module-Lattice-Based Key-Encapsulation Mechanism)** standard, formerly known as **CRYSTALS-Kyber**.
 
 This project aims to provide a readable, modular, and compliant implementation of the NIST specifications for post-quantum cryptography.
 
@@ -21,6 +21,6 @@ Add the dependency to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-kyber-rs = { path = "." } # If local
+kyber-nz = { path = "." } # If local
 # or via git once hosted
-# kyber-rs = { git = "[https://github.com/nougzarm/kyber-rs](https://github.com/nougzarm/kyber-rs)" }
+# kyber-nz = { git = "[https://github.com/nougzarm/kyber-nz](https://github.com/nougzarm/kyber-nz)" }
