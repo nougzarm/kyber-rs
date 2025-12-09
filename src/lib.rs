@@ -19,22 +19,23 @@
 //! ## 🚀 Quick Start (ML-KEM-768)
 //!
 //! ```rust
+//! use kyber_nz::errors::Error;
 //! use kyber_nz::Kyber768; // Alias for ML-KEM-768
 //! use kyber_nz::traits::KemScheme;
 //! use rand::rngs::OsRng;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Error> {
 //! // 1. Initialization
 //! let kem = Kyber768::new();
 //!
 //! // 2. Key Generation (Alice)
-//! let (ek, dk) = kem.key_gen(&mut OsRng);
+//! let (ek, dk) = kem.key_gen(&mut OsRng)?;
 //!
 //! // 3. Encapsulation (Bob)
-//! let (shared_secret_bob, ciphertext) = kem.encaps(&ek, &mut OsRng);
+//! let (shared_secret_bob, ciphertext) = kem.encaps(&ek, &mut OsRng)?;
 //!
 //! // 4. Decapsulation (Alice)
-//! let shared_secret_alice = kem.decaps(&dk, &ciphertext);
+//! let shared_secret_alice = kem.decaps(&dk, &ciphertext)?;
 //!
 //! // The secrets are identical
 //! assert_eq!(shared_secret_bob.0, shared_secret_alice.0);

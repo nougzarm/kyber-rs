@@ -16,10 +16,10 @@ fuzz_target!(|data: &[u8]| {
 
     let kem = Kyber768::new();
 
-    let (ek, dk) = kem.key_gen_internal(d, z);
-    let (shared_secret_bob, ciphertext) = kem.encaps_internal(&ek, m);
+    let (ek, dk) = kem.key_gen_internal(d, z).unwrap();
+    let (shared_secret_bob, ciphertext) = kem.encaps_internal(&ek, m).unwrap();
 
-    let shared_secret_alice = kem.decaps_internal(&dk, &ciphertext);
+    let shared_secret_alice = kem.decaps_internal(&dk, &ciphertext).unwrap();
     assert_eq!(shared_secret_bob.0, shared_secret_alice.0);
     
     let mut bad_ciphertext = ciphertext.clone();
@@ -27,7 +27,7 @@ fuzz_target!(|data: &[u8]| {
         *byte_to_change ^= corruption_byte;
     }
     
-    let shared_secret_corrupted = kem.decaps_internal(&dk, &bad_ciphertext);
+    let shared_secret_corrupted = kem.decaps_internal(&dk, &bad_ciphertext).unwrap();
     assert_ne!(
         shared_secret_bob.0, 
         shared_secret_corrupted.0
