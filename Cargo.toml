@@ -2,8 +2,7 @@
 name = "kyber-nz"
 version = "0.1.0"
 edition = "2021"
-authors = [
-    "Nugzari Uzoevi <nougzar.ouzoev@hotmail.fr>"]
+authors = ["Nugzari Uzoevi <nougzar.ouzoev@hotmail.fr>"]
 description = "A pure Rust, secure and robust implementation of FIPS 203 (ML-KEM)"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/nougzarm/kyber-nz"
@@ -12,9 +11,14 @@ readme = "README.md"
 keywords = ["crypto", "post-quantum", "kyber", "ml-kem", "kem"]
 categories = ["cryptography"]
 exclude = [
+    ".github/*",
+    "benches/",
     "fuzz/*",
-    ".github/*"
+    "tests/"
 ]
+
+[dev-dependencies]
+criterion = "0.8.1"
 
 [dependencies]
 hex = "0.4.3"
@@ -22,3 +26,7 @@ rand = "0.8"
 sha3 = "0.10.8"
 subtle = "2.6.1"
 zeroize = { version = "1.8.2", features = ["derive"] }
+
+[[bench]]
+name = "bench_main"
+harness = false
