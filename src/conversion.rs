@@ -27,18 +27,22 @@ pub fn get_bit(bytes: &[u8], index: usize) -> i16 {
 ///
 /// Input : b in {0, 1}^(8*r)
 /// Output : B in B^r
-pub fn bits_to_bytes(bits: &[u8]) -> Result<Vec<u8>, Error> {
+pub fn bits_to_bytes(bits: &[u8], out: &mut [u8]) -> Result<(), Error> {
     if !bits.len().is_multiple_of(8) {
         return Err(Error::InvalidInputLength);
     }
 
-    let mut bytes = vec![0u8; bits.len() / 8];
+    let output_length = bits.len() / 8;
+    if out.len() != output_length {
+        return Err(Error::InvalidInputLength);
+    }
+
     for (i, &bit) in bits.iter().enumerate() {
         if bit == 1 {
-            bytes[i / 8] |= 1 << (i % 8);
+            out[i / 8] |= 1u8 << (i % 8);
         }
     }
-    Ok(bytes)
+    Ok(())
 }
 
 /// Algorithm 4 (FIPS 203) : BytesToBits(B)
@@ -46,15 +50,17 @@ pub fn bits_to_bytes(bits: &[u8]) -> Result<Vec<u8>, Error> {
 ///
 /// Input : B in B^r
 /// Output : b in {0, 1}^(8*r)
-pub fn bytes_to_bits(bytes: &[u8]) -> Vec<u8> {
-    let mut bits = Vec::with_capacity(bytes.len() * 8);
+pub fn bytes_to_bits(bytes: &[u8], out: &mut [u8]) -> Result<(), Error> {
+    if out.len() != bytes.len() * 8 {
+        return Err(Error::InvalidInputLength);
+    }
 
-    for byte in bytes {
+    for (byte_index, byte) in bytes.iter().enumerate() {
         for i in 0..8 {
-            bits.push((byte >> i) & 1);
+            out[8 * byte_index + i] = (byte >> i) & 1;
         }
     }
-    bits
+    Ok(())
 }
 
 /// Algorithm 5 (FIPS 203) : ByteEncode_d(F)
@@ -62,14 +68,16 @@ pub fn bytes_to_bits(bytes: &[u8]) -> Vec<u8> {
 ///
 /// Input : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
 /// Output : B in B^(32*d)
-pub fn byte_encode(f: &[i16], d: usize) -> Result<Vec<u8>, Error> {
+pub fn byte_encode(f: &[i16], d: usize, out: &mut [u8]) -> Result<(), Error> {
     let mut bits = vec![0u8; f.len() * d];
     for (i, coeff) in f.iter().enumerate() {
         for j in 0..d {
             bits[i * d + j] = ((coeff >> j) & 1) as u8;
         }
     }
-    bits_to_bytes(&bits)
+
+    bits_to_bytes(&bits, out)?;
+    Ok(())
 }
 
 /// Algorithm 6 (FIPS 203) : ByteEncode_d(F)
@@ -77,22 +85,28 @@ pub fn byte_encode(f: &[i16], d: usize) -> Result<Vec<u8>, Error> {
 ///
 /// Input : B in B^(32*d)
 /// Output : integer array F in Z_m^N, where m = 2^d if d < 12, and m = Q if d = 12
-pub fn byte_decode(bytes: &[u8], d: usize, q: i16) -> Vec<i16> {
+pub fn byte_decode(bytes: &[u8], d: usize, q: i16, out: &mut [i16]) -> Result<(), Error> {
     let m = match d {
         12 => q,
         _ => 1i16 << d,
     };
 
-    let bits = bytes_to_bits(bytes);
+    let mut bits = vec![0u8; bytes.len() * 8];
+    bytes_to_bits(bytes, bits.as_mut_slice())?;
     let n = bits.len() / d;
-    let mut f = vec![0i16; n];
+
+    if out.len() != n {
+        return Err(Error::InvalidInputLength);
+    }
 
     for i in 0..n {
+        out[i] = 0i16;
         for j in 0..d {
-            f[i] = (f[i] as i32 + (bits[i * d + j] as i32) * (1 << j)).rem_euclid(m as i32) as i16;
+            out[i] =
+                (out[i] as i32 + (bits[i * d + j] as i32) * (1 << j)).rem_euclid(m as i32) as i16;
         }
     }
-    f
+    Ok(())
 }
 
 #[cfg(test)]
@@ -110,9 +124,17 @@ mod tests {
         assert_eq!(compress(decompress(2001, 11, q), 11, q), 2001);
 
         let bytes = b"salut tous le monde. Comment allez vous";
-        assert_eq!(bits_to_bytes(&bytes_to_bits(bytes))?, bytes);
+        let rev_bytes = {
+            let mut bits = [0u8; 39 * 8];
+            bytes_to_bits(bytes, &mut bits)?;
+            println!("{:?}", bits);
+            let mut res = [0u8; 39];
+            bits_to_bytes(bits.as_slice(), &mut res)?;
+            res
+        };
+        assert_eq!(rev_bytes, *bytes);
 
-        let b = vec![
+        let b = [
             1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1,
             1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1,
             1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0,
@@ -125,12 +147,25 @@ mod tests {
             1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1,
             1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0,
         ];
-        assert_eq!(bytes_to_bits(&bits_to_bytes(&b)?), b);
+        let rev_b = {
+            let mut bytes = [0u8; 312 / 8];
+            bits_to_bytes(&b, &mut bytes)?;
+            let mut res = [0u8; 312];
+            bytes_to_bits(&bytes, &mut res)?;
+            res
+        };
+        assert_eq!(rev_b, b);
 
         let f =
             PolynomialNTT::<KyberParams>::sample_ntt(b"Salut de la part de moi meme le ka").coeffs;
-        let f_rev = byte_decode(&byte_encode(&f, 12)?, 12, q);
-        assert_eq!(&f, &f_rev.as_slice());
+        let f_rev = {
+            let mut encode = [0u8; (256 * 12) / 8];
+            byte_encode(&f, 12, &mut encode)?;
+            let mut res = [0i16; 256];
+            byte_decode(&encode, 12, q, &mut res)?;
+            res
+        };
+        assert_eq!(f, f_rev);
         Ok(())
     }
 }

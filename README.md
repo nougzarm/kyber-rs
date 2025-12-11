@@ -21,11 +21,11 @@ This crate relies on [`criterion`](https://github.com/bheisler/criterion.rs) for
 
 The following results were measured on a **Apple MacBook Air M4** using a single core. The implementation is **Pure Rust** (no handwritten assembly), focusing on portability and safety while maintaining competitive speed.
 
-| Parameter Set   | KeyGen   | Encaps   | Decaps   |
-|-----------------|----------|----------|----------|
-| **ML-KEM-512**  | 55.3 µs  | 47.7 µs  | 59.0 µs  |
-| **ML-KEM-768**  | 85.3 µs  | 70.4 µs  | 87.3 µs  |
-| **ML-KEM-1024** | 120.2 µs | 98.8 µs  | 121.4 µs |
+| Parameter Set   | KeyGen    | Encaps   | Decaps    |
+|-----------------|-----------|----------|-----------|
+| **ML-KEM-512**  | 53.9 µs   | 44.0 µs  | 50.5 µs   |
+| **ML-KEM-768**  | 83.0 µs   | 65.0 µs  | 75.1 µs   |
+| **ML-KEM-1024** | 116.2 µs  | 92.4 µs  | 107.6 µs  |
 
 To run the benchmarks yourself:
 

@@ -99,12 +99,16 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
         let mut ek_content = [[0u8; 384]; K];
 
         for (i, poly) in t_ntt.iter().enumerate() {
-            ek_content[i].copy_from_slice(&byte_encode(&poly.coeffs, CONST_D)?);
+            let mut encoded = [0u8; 384];
+            byte_encode(&poly.coeffs, CONST_D, &mut encoded)?;
+            ek_content[i] = encoded;
         }
 
         let mut dk_content = [[0u8; 384]; K];
         for (i, poly) in s_ntt.iter().enumerate() {
-            dk_content[i].copy_from_slice(&byte_encode(&poly.coeffs, CONST_D)?);
+            let mut encoded = [0u8; 384];
+            byte_encode(&poly.coeffs, CONST_D, &mut encoded)?;
+            dk_content[i] = encoded;
         }
 
         Ok((
@@ -124,7 +128,11 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
         let mut t_ntt = Vec::with_capacity(K * K);
         for i in 0..K {
             let chunk = &ek.0[i];
-            let coeffs = byte_decode(chunk, 12, P::Q);
+            let coeffs = {
+                let mut res = [0i16; 256];
+                byte_decode(chunk, 12, P::Q, &mut res)?;
+                res
+            };
             t_ntt.push(PolynomialNTT::<P>::from_slice(coeffs.as_slice())?);
         }
         let rho = &ek.1;
@@ -171,7 +179,11 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
             u.push(&Polynomial::<P>::from_ntt(&pol_tmp) + poly);
         }
 
-        let m_bits = byte_decode(m, 1, P::Q);
+        let m_bits = {
+            let mut result = [0i16; 256];
+            byte_decode(m, 1, P::Q, &mut result)?;
+            result
+        };
         let mu_coeffs: Vec<i16> = m_bits.into_iter().map(|b| decompress(b, 1, P::Q)).collect();
         let mu = Polynomial::<P>::from_slice(&mu_coeffs)?;
 
@@ -188,11 +200,20 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
                 .iter()
                 .map(|&c| compress(c, S::DU, P::Q))
                 .collect();
-            c1.extend(byte_encode(compressed.as_slice(), S::DU)?);
+            let compressed_encode = {
+                let mut result = vec![0u8; 32 * S::DU];
+                byte_encode(&compressed, S::DU, &mut result)?;
+                result
+            };
+            c1.extend(compressed_encode);
         }
 
         let compressed_v: Vec<i16> = v.coeffs.iter().map(|&c| compress(c, S::DV, P::Q)).collect();
-        let c2 = byte_encode(compressed_v.as_slice(), S::DV)?;
+        let c2 = {
+            let mut result = vec![0u8; 32 * S::DV];
+            byte_encode(&compressed_v, S::DV, &mut result)?;
+            result
+        };
 
         c1.extend_from_slice(&c2);
         Ok(c1)
@@ -209,7 +230,16 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
 
         let mut u_prime = Vec::with_capacity(K);
         for i in 0..K {
-            let decode = byte_decode(&c_1[32 * S::DU * i..32 * S::DU * (i + 1)], S::DU, P::Q);
+            let decode = {
+                let mut result = [0i16; 256];
+                byte_decode(
+                    &c_1[32 * S::DU * i..32 * S::DU * (i + 1)],
+                    S::DU,
+                    P::Q,
+                    &mut result,
+                )?;
+                result
+            };
             let coeffs: Vec<i16> = decode
                 .into_iter()
                 .map(|val| decompress(val, S::DU, P::Q))
@@ -217,7 +247,11 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
             u_prime.push(Polynomial::<P>::from_slice(coeffs.as_slice())?);
         }
 
-        let decoded_v = byte_decode(c_2, S::DV, P::Q);
+        let decoded_v = {
+            let mut result = [0i16; 256];
+            byte_decode(c_2, S::DV, P::Q, &mut result)?;
+            result
+        };
         let v_coeffs: Vec<i16> = decoded_v
             .into_iter()
             .map(|val| decompress(val, S::DV, P::Q))
@@ -227,7 +261,11 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
         let mut s_ntt = Vec::with_capacity(K);
         for i in 0..K {
             let chunk = &dk.0[i];
-            let coeffs = byte_decode(chunk, 12, P::Q);
+            let coeffs = {
+                let mut result = [0i16; 256];
+                byte_decode(chunk, 12, P::Q, &mut result)?;
+                result
+            };
             s_ntt.push(PolynomialNTT::<P>::from_slice(coeffs.as_slice())?);
         }
 
@@ -244,7 +282,7 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
             .collect();
 
         let mut result = [0u8; 32];
-        result.copy_from_slice(&byte_encode(compressed_w.as_slice(), 1)?);
+        byte_encode(compressed_w.as_slice(), 1, &mut result)?;
         Ok(result)
     }
 }
