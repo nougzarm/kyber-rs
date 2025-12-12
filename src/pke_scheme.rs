@@ -1,3 +1,4 @@
+use core::array;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::constants::PolyParams;
@@ -60,39 +61,31 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
             }
         }
 
-        let mut s: Vec<Polynomial<P>> = vec![];
-        for _i in 0..K {
-            s.push(Polynomial::<P>::sample_poly_cbd(
-                &prf(S::ETA1, &gamma, &[n_var])?,
-                S::ETA1,
-            )?);
+        let s_ntt: [PolynomialNTT<P>; K] = array::from_fn(|_| {
+            let tmp =
+                Polynomial::<P>::sample_poly_cbd(&prf(S::ETA1, &gamma, &[n_var]).unwrap(), S::ETA1)
+                    .unwrap();
             n_var += 1;
-        }
+            tmp.to_ntt()
+        });
 
-        let mut e: Vec<Polynomial<P>> = vec![];
-        for _i in 0..K {
-            e.push(Polynomial::<P>::sample_poly_cbd(
-                &prf(S::ETA1, &gamma, &[n_var])?,
-                S::ETA1,
-            )?);
+        let e_ntt: [PolynomialNTT<P>; K] = array::from_fn(|_| {
+            let tmp =
+                Polynomial::<P>::sample_poly_cbd(&prf(S::ETA1, &gamma, &[n_var]).unwrap(), S::ETA1)
+                    .unwrap();
             n_var += 1;
-        }
+            tmp.to_ntt()
+        });
 
-        let s_ntt: Vec<PolynomialNTT<P>> = s.iter().map(|poly| poly.to_ntt()).collect();
-        let e_ntt: Vec<PolynomialNTT<P>> = e.iter().map(|poly| poly.to_ntt()).collect();
-
-        let mut t_ntt: Vec<PolynomialNTT<P>> = Vec::with_capacity(K);
-        for i in 0..K {
+        let t_ntt: [PolynomialNTT<P>; K] = array::from_fn(|i| {
             let mut pol_temp = PolynomialNTT::<P>::from([0i16; 256]);
 
             for (j, poly) in s_ntt.iter().enumerate() {
                 let product = &a_ntt[i * K + j] * poly;
                 pol_temp += &product;
             }
-
-            let t_i = &pol_temp + &e_ntt[i];
-            t_ntt.push(t_i);
-        }
+            &pol_temp + &e_ntt[i]
+        });
 
         const CONST_D: usize = 12;
 
@@ -148,36 +141,36 @@ impl<const K: usize, S: SecurityLevel, P: PolyParams> PkeScheme for KPke<K, S, P
             }
         }
 
-        let mut y = Vec::with_capacity(K);
-        for _i in 0..K {
-            y.push(Polynomial::<P>::sample_poly_cbd(
-                &prf(S::ETA1, r, &[n_var as u8])?,
+        let y_ntt: [PolynomialNTT<P>; K] = array::from_fn(|_| {
+            let tmp = Polynomial::<P>::sample_poly_cbd(
+                &prf(S::ETA1, r, &[n_var as u8]).unwrap(),
                 S::ETA1,
-            )?);
+            )
+            .unwrap();
             n_var += 1;
-        }
+            tmp.to_ntt()
+        });
 
-        let mut e_1 = Vec::with_capacity(K);
-        for _i in 0..K {
-            e_1.push(Polynomial::<P>::sample_poly_cbd(
-                &prf(S::ETA2, r, &[n_var as u8])?,
+        let e_1: [Polynomial<P>; K] = array::from_fn(|_| {
+            let tmp = Polynomial::<P>::sample_poly_cbd(
+                &prf(S::ETA2, r, &[n_var as u8]).unwrap(),
                 S::ETA2,
-            )?);
+            )
+            .unwrap();
             n_var += 1;
-        }
+            tmp
+        });
 
         let e_2 = Polynomial::<P>::sample_poly_cbd(&prf(S::ETA2, r, &[n_var as u8])?, S::ETA2)?;
-        let y_ntt: Vec<PolynomialNTT<P>> = y.iter().map(|p| p.to_ntt()).collect();
 
-        let mut u = Vec::with_capacity(K);
-        for (i, poly) in e_1.iter().enumerate() {
-            let mut pol_tmp = PolynomialNTT::<P>::from([0i16; 256]);
+        let u: [Polynomial<P>; K] = array::from_fn(|i| {
+            let mut tmp = PolynomialNTT::<P>::from([0i16; 256]);
             for j in 0..K {
                 let product = &a_ntt[j * K + i] * &y_ntt[j];
-                pol_tmp += &product;
+                tmp += &product;
             }
-            u.push(&Polynomial::<P>::from_ntt(&pol_tmp) + poly);
-        }
+            &Polynomial::<P>::from_ntt(&tmp) + &e_1[i]
+        });
 
         let m_bits = {
             let mut result = [0i16; 256];
